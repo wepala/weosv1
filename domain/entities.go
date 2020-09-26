@@ -4,7 +4,7 @@ import "encoding/json"
 
 type Entity interface {
 	ValueObject
-	GetID () string
+	GetID() string
 }
 
 type ValueObject interface {
@@ -15,7 +15,7 @@ type Event struct {
 	Type    string          `json:"type"`
 	Payload json.RawMessage `json:"payload"`
 	Meta    *EventMeta      `json:"meta"`
-	Version int `json:"version"`
+	Version int             `json:"version"`
 }
 
 type EventMeta struct {
@@ -31,16 +31,17 @@ type EventMeta struct {
 
 type EventSourcedEntity interface {
 	Entity
-	ApplyEvent (event *Event)
-	ApplyEventHistory (event []*Event)
+	ApplyEvent(event *Event)
+	ApplyEventHistory(event []*Event)
 	NewChange(event *Event)
 	GetNewChanges() []*Event
 }
 
 //AggregateRoot base struct for microservices to use
 type AggregateRoot struct {
-	ID string
-	newEvents []*Event
+	ID         string
+	SequenceNo int64
+	newEvents  []*Event
 }
 
 func (w *AggregateRoot) IsValid() bool {
@@ -52,7 +53,7 @@ func (w *AggregateRoot) GetID() string {
 }
 
 func (w *AggregateRoot) NewChange(event *Event) {
-	w.newEvents = append(w.newEvents,event)
+	w.newEvents = append(w.newEvents, event)
 }
 
 func (w *AggregateRoot) GetNewChanges() []*Event {
@@ -64,10 +65,7 @@ func (w *AggregateRoot) ApplyEvent(event *Event) {
 }
 
 func (w *AggregateRoot) ApplyEventHistory(event []*Event) {
-	for _,event := range event {
+	for _, event := range event {
 		w.ApplyEvent(event)
 	}
 }
-
-
-
