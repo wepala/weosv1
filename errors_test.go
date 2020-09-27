@@ -1,0 +1,19 @@
+package weos_test
+
+import (
+	"errors"
+	"github.com/wepala/weos"
+	"testing"
+)
+
+func TestErrorFactory_NewDomainError(t *testing.T) {
+	factory := weos.NewErrorFactory("applicationID", "accountID")
+	err := factory.NewDomainError("some domain error", "User", "1", errors.New("some other error"))
+	if err.Unwrap().Error() != "some other error" {
+		t.Errorf("expected embedded error to be %s, got %s", "some other error", err.Unwrap().Error())
+	}
+
+	if err.Error() != "some domain error" {
+		t.Errorf("expected the error to be %s, got %s", "some domain error", err.Error())
+	}
+}
