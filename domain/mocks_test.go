@@ -5,6 +5,7 @@ package domain_test
 
 import (
 	"github.com/wepala/weos/domain"
+	"github.com/wepala/weos/domain/entities"
 	"sync"
 )
 
@@ -41,13 +42,13 @@ var _ domain.EventRepository = &EventRepositoryMock{}
 //     }
 type EventRepositoryMock struct {
 	// GetByAggregateFunc mocks the GetByAggregate method.
-	GetByAggregateFunc func(ID string) []*domain.Event
+	GetByAggregateFunc func(ID string) []*entities.Event
 
 	// GetByAggregateAndSequenceRangeFunc mocks the GetByAggregateAndSequenceRange method.
-	GetByAggregateAndSequenceRangeFunc func(ID string, start int64, end int64) []*domain.Event
+	GetByAggregateAndSequenceRangeFunc func(ID string, start int64, end int64) []*entities.Event
 
 	// SaveFunc mocks the Save method.
-	SaveFunc func(in1 []*domain.Event) error
+	SaveFunc func(in1 []*entities.Event) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -68,13 +69,13 @@ type EventRepositoryMock struct {
 		// Save holds details about calls to the Save method.
 		Save []struct {
 			// In1 is the in1 argument value.
-			In1 []*domain.Event
+			In1 []*entities.Event
 		}
 	}
 }
 
 // GetByAggregate calls GetByAggregateFunc.
-func (mock *EventRepositoryMock) GetByAggregate(ID string) []*domain.Event {
+func (mock *EventRepositoryMock) GetByAggregate(ID string) []*entities.Event {
 	if mock.GetByAggregateFunc == nil {
 		panic("EventRepositoryMock.GetByAggregateFunc: method is nil but EventRepository.GetByAggregate was just called")
 	}
@@ -105,7 +106,7 @@ func (mock *EventRepositoryMock) GetByAggregateCalls() []struct {
 }
 
 // GetByAggregateAndSequenceRange calls GetByAggregateAndSequenceRangeFunc.
-func (mock *EventRepositoryMock) GetByAggregateAndSequenceRange(ID string, start int64, end int64) []*domain.Event {
+func (mock *EventRepositoryMock) GetByAggregateAndSequenceRange(ID string, start int64, end int64) []*entities.Event {
 	if mock.GetByAggregateAndSequenceRangeFunc == nil {
 		panic("EventRepositoryMock.GetByAggregateAndSequenceRangeFunc: method is nil but EventRepository.GetByAggregateAndSequenceRange was just called")
 	}
@@ -144,12 +145,12 @@ func (mock *EventRepositoryMock) GetByAggregateAndSequenceRangeCalls() []struct 
 }
 
 // Save calls SaveFunc.
-func (mock *EventRepositoryMock) Save(in1 []*domain.Event) error {
+func (mock *EventRepositoryMock) Save(in1 []*entities.Event) error {
 	if mock.SaveFunc == nil {
 		panic("EventRepositoryMock.SaveFunc: method is nil but EventRepository.Save was just called")
 	}
 	callInfo := struct {
-		In1 []*domain.Event
+		In1 []*entities.Event
 	}{
 		In1: in1,
 	}
@@ -163,10 +164,10 @@ func (mock *EventRepositoryMock) Save(in1 []*domain.Event) error {
 // Check the length with:
 //     len(mockedEventRepository.SaveCalls())
 func (mock *EventRepositoryMock) SaveCalls() []struct {
-	In1 []*domain.Event
+	In1 []*entities.Event
 } {
 	var calls []struct {
-		In1 []*domain.Event
+		In1 []*entities.Event
 	}
 	lockEventRepositoryMockSave.RLock()
 	calls = mock.calls.Save
