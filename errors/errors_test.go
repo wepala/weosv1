@@ -1,13 +1,13 @@
-package weos_test
+package errors_test
 
 import (
 	"errors"
-	"github.com/wepala/weos"
+	errors2 "github.com/wepala/weos/errors"
 	"testing"
 )
 
 func TestErrorFactory_NewDomainError(t *testing.T) {
-	err := weos.NewDomainError("some domain error", "User", "1", errors.New("some other error"))
+	err := errors2.NewDomainError("some domain error", "User", "1", errors.New("some other error"))
 	if err.Unwrap().Error() != "some other error" {
 		t.Errorf("expected embedded error to be %s, got %s", "some other error", err.Unwrap().Error())
 	}

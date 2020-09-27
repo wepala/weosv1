@@ -1,4 +1,4 @@
-package weos
+package errors
 
 //goland:noinspection GoNameStartsWithPackageName
 type WeOSError struct {

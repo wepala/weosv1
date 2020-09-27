@@ -7,6 +7,8 @@ type Entity interface {
 
 type ValueObject interface {
 	IsValid() bool
+	AddError(err error)
+	GetErrors() []error
 }
 
 type EventSourcedEntity interface {
