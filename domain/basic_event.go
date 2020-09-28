@@ -1,10 +1,26 @@
 package domain
 
-type Event struct {
+type BasicEvent struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
-	Meta    *EventMeta  `json:"meta"`
+	Meta    EventMeta   `json:"meta"`
 	Version int         `json:"version"`
+}
+
+func (b *BasicEvent) GetID() string {
+	return b.Meta.ID
+}
+
+func (b *BasicEvent) GetMetadata() EventMeta {
+	return b.Meta
+}
+
+func (b *BasicEvent) GetPayload() interface{} {
+	return b.Payload
+}
+
+func (b *BasicEvent) GetType() string {
+	return b.Type
 }
 
 type EventMeta struct {

@@ -9,20 +9,20 @@ import (
 type AggregateRoot struct {
 	BasicEntity
 	SequenceNo int64
-	newEvents  []*Event
+	newEvents  []Event
 }
 
-func (w *AggregateRoot) NewChange(event *Event) {
+func (w *AggregateRoot) NewChange(event Event) {
 	w.newEvents = append(w.newEvents, event)
 }
 
-func (w *AggregateRoot) GetNewChanges() []*Event {
+func (w *AggregateRoot) GetNewChanges() []Event {
 	return w.newEvents
 }
 
 var DefaultReducer = func(initialState Entity, event Event, next Reducer) Entity {
 	//convert event to json string
-	eventString, err := json.Marshal(event.Payload)
+	eventString, err := json.Marshal(event.GetPayload())
 	if err != nil {
 		initialState.AddError(errors.NewDomainError("error marshalling event", "", initialState.GetID(), err))
 	} else {

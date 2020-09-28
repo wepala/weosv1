@@ -25,4 +25,11 @@ type EventRepository interface {
 	Save([]Event) error
 }
 
+type Event interface {
+	GetID() string
+	GetMetadata() EventMeta
+	GetPayload() interface{}
+	GetType() string
+}
+
 type Reducer func(initialState Entity, event Event, next Reducer) Entity

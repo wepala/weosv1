@@ -11,12 +11,14 @@ func TestAggregateRoot_DefaultReducer(t *testing.T) {
 		Title string `json:"title"`
 	}
 
-	mockEvent := domain.Event{
+	mockEvent := &domain.BasicEvent{
 		Type: "BasicEvent",
 		Payload: &struct {
 			Title string
 		}{Title: "Test"},
-		Meta:    nil,
+		Meta: domain.EventMeta{
+			ID: "",
+		},
 		Version: 0,
 	}
 	baseAggregate := &BaseAggregate{}
@@ -32,12 +34,14 @@ func TestAggregateRoot_NewAggregateFromEvents(t *testing.T) {
 		Title string `json:"title"`
 	}
 
-	mockEvent := domain.Event{
+	mockEvent := &domain.BasicEvent{
 		Type: "BasicEvent",
 		Payload: &struct {
 			Title string
 		}{Title: "Test"},
-		Meta:    nil,
+		Meta: domain.EventMeta{
+			ID: "",
+		},
 		Version: 0,
 	}
 	baseAggregate := &BaseAggregate{}
