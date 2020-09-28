@@ -1,12 +1,10 @@
-package entities
-
-import "encoding/json"
+package domain
 
 type Event struct {
-	Type    string          `json:"type"`
-	Payload json.RawMessage `json:"payload"`
-	Meta    *EventMeta      `json:"meta"`
-	Version int             `json:"version"`
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload"`
+	Meta    *EventMeta  `json:"meta"`
+	Version int         `json:"version"`
 }
 
 type EventMeta struct {
