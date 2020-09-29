@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type BasicEvent struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
@@ -21,6 +23,18 @@ func (b *BasicEvent) GetPayload() interface{} {
 
 func (b *BasicEvent) GetType() string {
 	return b.Type
+}
+
+func NewBasicEvent(eventType string, id string, payload interface{}, creatorID string) *BasicEvent {
+	return &BasicEvent{
+		Type:    eventType,
+		Payload: payload,
+		Meta: EventMeta{
+			ID:      id,
+			User:    creatorID,
+			Created: time.Now().Format(time.RFC3339Nano),
+		},
+	}
 }
 
 type EventMeta struct {

@@ -1,0 +1,5 @@
+application:
+  applicationId: ${APPLICATION_ID}
+  applicationTitle: ${APPLICATION_TITLE}
+  accountId: ${ACCOUNT_ID}
+

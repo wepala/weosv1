@@ -5,7 +5,7 @@ import (
 	"github.com/wepala/weos/errors"
 )
 
-//AggregateRoot base struct for WeOS applications to use. This is event sourcing ready by default
+//AggregateRoot Is a base struct for WeOS applications to use. This is event sourcing ready by default
 type AggregateRoot struct {
 	BasicEntity
 	SequenceNo int64
