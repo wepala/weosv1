@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"github.com/spf13/viper"
 	"time"
 )
@@ -15,8 +16,8 @@ type Application struct {
 	commandHandler   CommandHandler
 }
 
-func (app *Application) Run(command Command) (*time.Time, error) {
-	return app.commandHandler.Dispatch(command)
+func (app *Application) Run(context context.Context, command *Command) (*time.Time, error) {
+	return app.commandHandler.Dispatch(context, command)
 }
 
 //NewApplication creates a new basic application.
