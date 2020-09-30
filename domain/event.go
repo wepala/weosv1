@@ -1,32 +1,18 @@
 package domain
 
-import "time"
+import (
+	"time"
+)
 
-type BasicEvent struct {
+type Event struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
 	Meta    EventMeta   `json:"meta"`
 	Version int         `json:"version"`
 }
 
-func (b *BasicEvent) GetID() string {
-	return b.Meta.ID
-}
-
-func (b *BasicEvent) GetMetadata() EventMeta {
-	return b.Meta
-}
-
-func (b *BasicEvent) GetPayload() interface{} {
-	return b.Payload
-}
-
-func (b *BasicEvent) GetType() string {
-	return b.Type
-}
-
-func NewBasicEvent(eventType string, id string, payload interface{}, creatorID string) *BasicEvent {
-	return &BasicEvent{
+func NewBasicEvent(eventType string, id string, payload interface{}, creatorID string) *Event {
+	return &Event{
 		Type:    eventType,
 		Payload: payload,
 		Meta: EventMeta{

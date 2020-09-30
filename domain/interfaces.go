@@ -19,17 +19,4 @@ type EventSourcedEntity interface {
 	GetNewChanges() []*Event
 }
 
-type EventRepository interface {
-	GetByAggregate(ID string) []Event
-	GetByAggregateAndSequenceRange(ID string, start int64, end int64) []Event
-	Save([]Event) error
-}
-
-type Event interface {
-	GetID() string
-	GetMetadata() EventMeta
-	GetPayload() interface{}
-	GetType() string
-}
-
 type Reducer func(initialState Entity, event Event, next Reducer) Entity

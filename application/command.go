@@ -1,13 +1,16 @@
 package application
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 //Command is a common interface that all incoming requests should implement.
-type Command interface {
-	Execute() (*time.Time, error)
-	GetPayload() interface{}
-	GetType() string
-	GetMetadata() CommandMetadata
+type Command struct {
+	Type     string      `json:"type"`
+	Payload  interface{} `json:"payload"`
+	Execute  Execute
+	Metadata CommandMetadata `json:"metadata"`
 }
 
 type CommandMetadata struct {
@@ -22,10 +25,12 @@ type CommandMetadata struct {
 type CommandHandler struct {
 }
 
+type Execute func(context context.Context) (*time.Time, error)
+
 //Dispatches a command and can execute a command at a later date
-func (ch *CommandHandler) Dispatch(command Command) (*time.Time, error) {
-	if command.GetMetadata().ExecutionDate == nil {
-		return command.Execute()
+func (ch *CommandHandler) Dispatch(context context.Context, command *Command) (*time.Time, error) {
+	if command.Metadata.ExecutionDate == nil {
+		return command.Execute(context)
 	}
 	//TODO save command to be executed later
 	return nil, nil

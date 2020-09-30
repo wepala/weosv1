@@ -22,7 +22,7 @@ func (w *AggregateRoot) GetNewChanges() []Event {
 
 var DefaultReducer = func(initialState Entity, event Event, next Reducer) Entity {
 	//convert event to json string
-	eventString, err := json.Marshal(event.GetPayload())
+	eventString, err := json.Marshal(event.Payload)
 	if err != nil {
 		initialState.AddError(errors.NewDomainError("error marshalling event", "", initialState.GetID(), err))
 	} else {
