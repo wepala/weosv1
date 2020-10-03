@@ -154,6 +154,26 @@ func (e *EventRepositoryGorm) Flush() error {
 	return err
 }
 
+func (e *EventRepositoryGorm) Remove(entities []domain.Entity) error {
+
+	savePointID := "s" + ksuid.New().String() //NOTE the save point can't start with a number
+	e.logger.Infof("persisting %d events with save point %s", len(entities), savePointID)
+	e.DB.SavePoint(savePointID)
+	for _, event := range entities {
+		gormEvent, err := NewGormEvent(event.(*domain.Event))
+		if err != nil {
+			return err
+		}
+		db := e.DB.Delete(gormEvent)
+		if db.Error != nil {
+			e.DB.RollbackTo(savePointID)
+			return db.Error
+		}
+	}
+
+	return nil
+}
+
 func NewEventRepositoryWithGORM(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger log.Ext1FieldLogger, ctx context.Context) (*EventRepositoryGorm, error) {
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: db,

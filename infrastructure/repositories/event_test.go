@@ -1,4 +1,4 @@
-package repositories
+package repositories_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos/domain"
+	"github.com/wepala/weos/infrastructure/repositories"
 	"os"
 	"testing"
 )
@@ -60,7 +61,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestEventRepositoryGorm_Persist(t *testing.T) {
-	eventRepository, err := NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
+	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
@@ -120,7 +121,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
-	eventRepository, err := NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
+	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
