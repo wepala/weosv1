@@ -51,6 +51,9 @@ func NewGormEvent(event *domain.Event) (GormEvent, error) {
 }
 
 func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
+	if len(entities) == 0 {
+		return nil
+	} //didn't think it should barf if an empty list is passed
 	var gormEvents []GormEvent
 	savePointID := "s" + ksuid.New().String() //NOTE the save point can't start with a number
 	e.logger.Infof("persisting %d events with save point %s", len(entities), savePointID)

@@ -16,7 +16,7 @@ type ValueObject interface {
 type EventSourcedEntity interface {
 	Entity
 	NewChange(event *Event)
-	GetNewChanges() []*Event
+	GetNewChanges() []Entity
 }
 
 type Reducer func(initialState Entity, event Event, next Reducer) Entity

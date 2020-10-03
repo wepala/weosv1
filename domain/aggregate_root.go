@@ -9,14 +9,14 @@ import (
 type AggregateRoot struct {
 	BasicEntity
 	SequenceNo int64
-	newEvents  []*Event
+	newEvents  []Entity
 }
 
 func (w *AggregateRoot) NewChange(event *Event) {
 	w.newEvents = append(w.newEvents, event)
 }
 
-func (w *AggregateRoot) GetNewChanges() []*Event {
+func (w *AggregateRoot) GetNewChanges() []Entity {
 	return w.newEvents
 }
 

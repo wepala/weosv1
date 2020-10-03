@@ -162,3 +162,25 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 		t.Errorf("expected %d events got %d", 3, len(events))
 	}
 }
+
+func TestSaveAggregateEvents(t *testing.T) {
+	type BaseAggregate struct {
+		domain.AggregateRoot
+		Title string `json:"title"`
+	}
+
+	baseAggregate := &BaseAggregate{}
+
+	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
+	if err != nil {
+		t.Fatalf("error encountered creating event repository '%s'", err)
+	}
+	err = eventRepository.Migrate()
+	if err != nil {
+		t.Fatalf("error encountered migration event repository '%s'", err)
+	}
+	err = eventRepository.Persist(baseAggregate.GetNewChanges())
+	if err != nil {
+		t.Fatalf("encountered error perssiting aggregate events")
+	}
+}
