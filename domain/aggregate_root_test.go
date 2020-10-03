@@ -22,7 +22,7 @@ func TestAggregateRoot_DefaultReducer(t *testing.T) {
 		Version: 0,
 	}
 	baseAggregate := &BaseAggregate{}
-	baseAggregate = domain.DefaultReducer(baseAggregate, *mockEvent, nil).(*BaseAggregate)
+	baseAggregate = domain.DefaultReducer(baseAggregate, mockEvent, nil).(*BaseAggregate)
 	if baseAggregate.Title != "Test" {
 		t.Errorf("expected aggregate title to be '%s', got '%s'", "Test", baseAggregate.Title)
 	}
@@ -45,7 +45,7 @@ func TestAggregateRoot_NewAggregateFromEvents(t *testing.T) {
 		Version: 1,
 	}
 	baseAggregate := &BaseAggregate{}
-	baseAggregate = domain.NewAggregateFromEvents(baseAggregate, []domain.Event{*mockEvent}).(*BaseAggregate)
+	baseAggregate = domain.NewAggregateFromEvents(baseAggregate, []*domain.Event{mockEvent}).(*BaseAggregate)
 	if baseAggregate.Title != "Test" {
 		t.Errorf("expected aggregate title to be '%s', got '%s'", "Test", baseAggregate.Title)
 	}

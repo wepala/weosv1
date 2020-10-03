@@ -9,18 +9,18 @@ import (
 type AggregateRoot struct {
 	BasicEntity
 	SequenceNo int64
-	newEvents  []Event
+	newEvents  []*Event
 }
 
-func (w *AggregateRoot) NewChange(event Event) {
+func (w *AggregateRoot) NewChange(event *Event) {
 	w.newEvents = append(w.newEvents, event)
 }
 
-func (w *AggregateRoot) GetNewChanges() []Event {
+func (w *AggregateRoot) GetNewChanges() []*Event {
 	return w.newEvents
 }
 
-var DefaultReducer = func(initialState Entity, event Event, next Reducer) Entity {
+var DefaultReducer = func(initialState Entity, event *Event, next Reducer) Entity {
 	//convert event to json string
 	eventString, err := json.Marshal(event.Payload)
 	if err != nil {
@@ -35,7 +35,7 @@ var DefaultReducer = func(initialState Entity, event Event, next Reducer) Entity
 	return initialState
 }
 
-var NewAggregateFromEvents = func(initialState Entity, events []Event) Entity {
+var NewAggregateFromEvents = func(initialState Entity, events []*Event) Entity {
 	for _, event := range events {
 		initialState = DefaultReducer(initialState, event, nil)
 	}
