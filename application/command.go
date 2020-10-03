@@ -21,14 +21,18 @@ type CommandMetadata struct {
 	UserID        string
 }
 
-//CommandHandler is used to execute commands
-type CommandHandler struct {
+type CommandHandler interface {
+	Dispatch(context context.Context, command *Command) (*time.Time, error)
+}
+
+//DefaultCommandHandler is used to execute commands
+type DefaultCommandHandler struct {
 }
 
 type Execute func(context context.Context) (*time.Time, error)
 
 //Dispatches a command and can execute a command at a later date
-func (ch *CommandHandler) Dispatch(context context.Context, command *Command) (*time.Time, error) {
+func (ch *DefaultCommandHandler) Dispatch(context context.Context, command *Command) (*time.Time, error) {
 	if command.Metadata.ExecutionDate == nil {
 		return command.Execute(context)
 	}

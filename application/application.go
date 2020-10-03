@@ -26,6 +26,6 @@ func NewApplication(config *viper.Viper) *Application {
 		ApplicationId:    config.GetString("APPLICATION_ID"),
 		ApplicationTitle: config.GetString("APPLICATION_TITLE"),
 		AccountId:        config.GetString("ACCOUNT_ID"),
-		commandHandler:   CommandHandler{},
+		commandHandler:   &DefaultCommandHandler{},
 	}
 }

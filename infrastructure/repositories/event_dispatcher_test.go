@@ -1,8 +1,8 @@
 package repositories_test
 
 import (
-	"github.com/wepala/weos/application/repositories"
 	"github.com/wepala/weos/domain"
+	"github.com/wepala/weos/infrastructure/repositories"
 	"testing"
 )
 
@@ -11,7 +11,7 @@ func TestEventDisptacher_Dispatch(t *testing.T) {
 		Type:    "TEST_EVENT",
 		Payload: nil,
 		Meta: domain.EventMeta{
-			ID:          "some id",
+			EntityID:    "some id",
 			Application: "applicationID",
 			Account:     "accountID",
 		},

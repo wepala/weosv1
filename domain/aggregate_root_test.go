@@ -17,7 +17,7 @@ func TestAggregateRoot_DefaultReducer(t *testing.T) {
 			Title string
 		}{Title: "Test"},
 		Meta: domain.EventMeta{
-			ID: "",
+			EntityID: "",
 		},
 		Version: 0,
 	}
@@ -40,9 +40,9 @@ func TestAggregateRoot_NewAggregateFromEvents(t *testing.T) {
 			Title string
 		}{Title: "Test"},
 		Meta: domain.EventMeta{
-			ID: "",
+			EntityID: "",
 		},
-		Version: 0,
+		Version: 1,
 	}
 	baseAggregate := &BaseAggregate{}
 	baseAggregate = domain.NewAggregateFromEvents(baseAggregate, []domain.Event{*mockEvent}).(*BaseAggregate)

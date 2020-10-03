@@ -1,13 +1,13 @@
 package repositories
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
+	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos/domain"
-	//"gorm.io/gorm"
-	"log"
 	"os"
 	"testing"
 )
@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestEventRepositoryGorm_Persist(t *testing.T) {
-	eventRepository, err := NewEventRepositoryWithGORM(db, nil)
+	eventRepository, err := NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
@@ -70,10 +70,11 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 	}
 
 	mockEvent := &domain.Event{
+		ID:      "some event id",
 		Type:    "TEST_EVENT",
 		Payload: nil,
 		Meta: domain.EventMeta{
-			ID:          "some id",
+			EntityID:    "some id",
 			Application: "applicationID",
 			Account:     "accountID",
 			SequenceNo:  0,
@@ -87,9 +88,13 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		eventHandlerCalled += 1
 	})
 
-	err = eventRepository.Persist([]domain.Event{*mockEvent})
+	err = eventRepository.Persist([]domain.Entity{mockEvent})
 	if err != nil {
 		t.Fatalf("error encountered persisting event '%s'", err)
+	}
+	err = eventRepository.Flush()
+	if err != nil {
+		t.Fatalf("error encountered saving events '%s'", err)
 	}
 
 	if eventHandlerCalled == 1 {
@@ -111,5 +116,48 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		if eventType != mockEvent.Type {
 			t.Errorf("expected the type to be '%s', got '%s'", mockEvent.Type, eventType)
 		}
+	}
+}
+
+func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
+	eventRepository, err := NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
+	if err != nil {
+		t.Fatalf("error encountered creating event repository '%s'", err)
+	}
+	err = eventRepository.Migrate()
+	if err != nil {
+		t.Fatalf("error encountered migration event repository '%s'", err)
+	}
+	mockEvent := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+		Title string `json:"title"`
+	}{Title: "First Post"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
+
+	mockEvent2 := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}{Title: "Updated First Post", Description: "Lorem Ipsum"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
+
+	mockEvent3 := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}{Title: "Updated First Post", Description: "Finalizing Post"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
+
+	err = eventRepository.Persist([]domain.Entity{mockEvent, mockEvent2, mockEvent3})
+	if err != nil {
+		t.Fatalf("error encountered persisting events '%s'", err)
+	}
+
+	err = eventRepository.Flush()
+	if err != nil {
+		t.Fatalf("error encountered flushing events '%s'", err)
+	}
+
+	events, err := eventRepository.GetByAggregate("1iNfR0jYD9UbYocH8D3WK6N4pG9")
+	if err != nil {
+		t.Fatalf("encountered error getting aggregate '%s' error: '%s'", "1iNfR0jYD9UbYocH8D3WK6N4pG9", err)
+	}
+
+	if len(events) != 3 {
+		t.Errorf("expected %d events got %d", 3, len(events))
 	}
 }
