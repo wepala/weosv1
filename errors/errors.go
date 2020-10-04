@@ -4,8 +4,8 @@ package errors
 type WeOSError struct {
 	message     string
 	err         error
-	application string
-	accountID   string
+	Application string
+	AccountID   string
 }
 
 func (e *WeOSError) Error() string {

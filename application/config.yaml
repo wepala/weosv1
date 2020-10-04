@@ -2,4 +2,14 @@ application:
   applicationId: ${APPLICATION_ID}
   applicationTitle: ${APPLICATION_TITLE}
   accountId: ${ACCOUNT_ID}
+  database:
+    host: ${POSTGRES_HOST}
+    database: ${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    port: ${POSTGRES_PORT}
+  logger:
+    level: debug
+    report-caller: true
+    formatter: text
 
