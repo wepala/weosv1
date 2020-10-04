@@ -88,7 +88,7 @@ type WeOSLogConfig struct {
 //	}
 //}
 
-func NewApplicationFromConfig(config *WeOSApplicationConfig, logger log.Ext1FieldLogger, db *sql.DB) (*WeOSApp, error) {
+var NewApplicationFromConfig = func(config *WeOSApplicationConfig, logger log.Ext1FieldLogger, db *sql.DB) (*WeOSApp, error) {
 
 	var err error
 

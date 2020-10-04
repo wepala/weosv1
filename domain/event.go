@@ -15,7 +15,7 @@ type Event struct {
 	errors  []error
 }
 
-func NewBasicEvent(eventType string, entityID string, payload interface{}, creatorID string) *Event {
+var NewBasicEvent = func(eventType string, entityID string, payload interface{}, creatorID string) *Event {
 	return &Event{
 		ID:      ksuid.New().String(),
 		Type:    eventType,
