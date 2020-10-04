@@ -65,7 +65,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.Migrate()
+	err = eventRepository.(*repositories.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
@@ -125,7 +125,7 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.Migrate()
+	err = eventRepository.(*repositories.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
@@ -175,7 +175,7 @@ func TestSaveAggregateEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.Migrate()
+	err = eventRepository.(*repositories.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}

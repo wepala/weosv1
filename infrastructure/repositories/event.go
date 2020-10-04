@@ -177,7 +177,7 @@ func (e *EventRepositoryGorm) Remove(entities []domain.Entity) error {
 	return nil
 }
 
-var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger log.Ext1FieldLogger, ctx context.Context) (*EventRepositoryGorm, error) {
+var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger log.Ext1FieldLogger, ctx context.Context) (EventRepository, error) {
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: db,
 	}), config)
