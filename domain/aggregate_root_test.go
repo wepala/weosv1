@@ -11,15 +11,11 @@ func TestAggregateRoot_DefaultReducer(t *testing.T) {
 		Title string `json:"title"`
 	}
 
-	mockEvent := &domain.Event{
-		Type: "Event",
-		Payload: &struct {
-			Title string
-		}{Title: "Test"},
-		Meta: domain.EventMeta{
-			EntityID: "",
-		},
-		Version: 0,
+	mockEvent, err := domain.NewBasicEvent("Event", "", &struct {
+		Title string `json:"title"`
+	}{Title: "Test"}, "")
+	if err != nil {
+		t.Fatalf("error creating mock event '%s'", err)
 	}
 	baseAggregate := &BaseAggregate{}
 	baseAggregate = domain.DefaultReducer(baseAggregate, mockEvent, nil).(*BaseAggregate)
@@ -34,15 +30,11 @@ func TestAggregateRoot_NewAggregateFromEvents(t *testing.T) {
 		Title string `json:"title"`
 	}
 
-	mockEvent := &domain.Event{
-		Type: "Event",
-		Payload: &struct {
-			Title string
-		}{Title: "Test"},
-		Meta: domain.EventMeta{
-			EntityID: "",
-		},
-		Version: 1,
+	mockEvent, err := domain.NewBasicEvent("Event", "", &struct {
+		Title string `json:"title"`
+	}{Title: "Test"}, "")
+	if err != nil {
+		t.Fatalf("error creating mock event '%s'", err)
 	}
 	baseAggregate := &BaseAggregate{}
 	baseAggregate = domain.NewAggregateFromEvents(baseAggregate, []*domain.Event{mockEvent}).(*BaseAggregate)

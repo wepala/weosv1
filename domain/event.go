@@ -1,32 +1,37 @@
 package domain
 
 import (
+	"encoding/json"
 	"github.com/segmentio/ksuid"
 	"github.com/wepala/weos/errors"
 	"time"
 )
 
 type Event struct {
-	ID      string      `json:"id"`
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
-	Meta    EventMeta   `json:"meta"`
-	Version int         `json:"version"`
+	ID      string          `json:"id"`
+	Type    string          `json:"type"`
+	Payload json.RawMessage `json:"payload"`
+	Meta    EventMeta       `json:"meta"`
+	Version int             `json:"version"`
 	errors  []error
 }
 
-var NewBasicEvent = func(eventType string, entityID string, payload interface{}, creatorID string) *Event {
+var NewBasicEvent = func(eventType string, entityID string, payload interface{}, creatorID string) (*Event, error) {
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, errors.NewDomainError("Unable to marshal event payload", eventType, entityID, err)
+	}
 	return &Event{
 		ID:      ksuid.New().String(),
 		Type:    eventType,
-		Payload: payload,
+		Payload: payloadBytes,
 		Version: 1,
 		Meta: EventMeta{
 			EntityID: entityID,
 			User:     creatorID,
 			Created:  time.Now().Format(time.RFC3339Nano),
 		},
-	}
+	}, nil
 }
 
 type EventMeta struct {

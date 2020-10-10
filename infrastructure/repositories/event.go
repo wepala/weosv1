@@ -38,6 +38,7 @@ func NewGormEvent(event *domain.Event) (GormEvent, error) {
 	if err != nil {
 		return GormEvent{}, err
 	}
+
 	return GormEvent{
 		ID:            event.ID,
 		EntityID:      event.Meta.EntityID,
@@ -51,6 +52,7 @@ func NewGormEvent(event *domain.Event) (GormEvent, error) {
 }
 
 func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
+	//TODO use the information in the context to get account info, application info.
 	if len(entities) == 0 {
 		return nil
 	} //didn't think it should barf if an empty list is passed
@@ -94,7 +96,7 @@ func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*domain.Event, error)
 		tevents = append(tevents, &domain.Event{
 			ID:      event.ID,
 			Type:    event.Type,
-			Payload: event.Payload,
+			Payload: json.RawMessage(event.Payload),
 			Meta: domain.EventMeta{
 				EntityID:    event.EntityID,
 				Account:     event.AccountID,
@@ -120,7 +122,7 @@ func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start in
 		tevents = append(tevents, &domain.Event{
 			ID:      event.ID,
 			Type:    event.Type,
-			Payload: event.Payload,
+			Payload: json.RawMessage(event.Payload),
 			Meta: domain.EventMeta{
 				EntityID:    event.EntityID,
 				Account:     event.AccountID,

@@ -129,16 +129,16 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
-	mockEvent := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent, _ := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
 
-	mockEvent2 := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent2, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
 
-	mockEvent3 := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent3, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
