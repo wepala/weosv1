@@ -18,6 +18,7 @@ type EventRepositoryGorm struct {
 	eventDispatcher EventDisptacher
 	logger          log.Ext1FieldLogger
 	ctx             context.Context
+	unitOfWork      bool
 }
 
 type GormEvent struct {
@@ -59,14 +60,20 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 	var gormEvents []GormEvent
 	savePointID := "s" + ksuid.New().String() //NOTE the save point can't start with a number
 	e.logger.Infof("persisting %d events with save point %s", len(entities), savePointID)
-	e.DB.SavePoint(savePointID)
+	if e.unitOfWork {
+		e.DB.SavePoint(savePointID)
+	}
+
 	for _, event := range entities {
 		if !event.IsValid() {
 			for _, terr := range event.GetErrors() {
 				e.logger.Errorf("error encountered persisting entity '%s', '%s'", event.(*domain.Event).Meta.EntityID, terr)
 			}
-			e.logger.Warnf("rolling back saving events to %s", savePointID)
-			e.DB.RollbackTo(savePointID)
+			if e.unitOfWork {
+				e.logger.Warnf("rolling back saving events to %s", savePointID)
+				e.DB.RollbackTo(savePointID)
+			}
+
 			return event.GetErrors()[0]
 		}
 
@@ -188,7 +195,7 @@ var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOf
 	}
 	if useUnitOfWork {
 		transaction := gormDB.Begin()
-		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, ctx: ctx}, nil
+		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, ctx: ctx, unitOfWork: useUnitOfWork}, nil
 	}
-	return &EventRepositoryGorm{DB: gormDB}, nil
+	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx}, nil
 }
