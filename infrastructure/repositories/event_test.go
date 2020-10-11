@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestEventRepositoryGorm_Persist(t *testing.T) {
-	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
+	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "accountID", "applicationID", "user id", "group id")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
@@ -75,10 +75,8 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		Type:    "TEST_EVENT",
 		Payload: nil,
 		Meta: domain.EventMeta{
-			EntityID:    "some id",
-			Application: "applicationID",
-			Account:     "accountID",
-			SequenceNo:  0,
+			EntityID:   "some id",
+			SequenceNo: 0,
 		},
 		Version: 1,
 	}
@@ -117,11 +115,19 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		if eventType != mockEvent.Type {
 			t.Errorf("expected the type to be '%s', got '%s'", mockEvent.Type, eventType)
 		}
+
+		if accountID != "accountID" {
+			t.Errorf("expected the account id to be '%s', got '%s'", "accountID", accountID)
+		}
+
+		if applicationID != "applicationID" {
+			t.Errorf("expected the application id to be '%s', got '%s'", "applicationID", applicationID)
+		}
 	}
 }
 
 func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
-	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
+	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
@@ -171,7 +177,7 @@ func TestSaveAggregateEvents(t *testing.T) {
 
 	baseAggregate := &BaseAggregate{}
 
-	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background())
+	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}

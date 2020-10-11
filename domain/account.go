@@ -1,5 +1,5 @@
 package domain
 
-type User struct {
+type Account struct {
 	BasicEntity
 }

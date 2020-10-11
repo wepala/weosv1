@@ -19,6 +19,10 @@ type EventRepositoryGorm struct {
 	logger          log.Ext1FieldLogger
 	ctx             context.Context
 	unitOfWork      bool
+	AccountID       string
+	ApplicationID   string
+	GroupID         string
+	UserID          string
 }
 
 type GormEvent struct {
@@ -64,10 +68,24 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 		e.DB.SavePoint(savePointID)
 	}
 
-	for _, event := range entities {
+	for _, entity := range entities {
+		event := entity.(*domain.Event)
+		//let's fill in meta data if it's not already in the object
+		if event.Meta.User == "" {
+			event.Meta.User = e.UserID
+		}
+		if event.Meta.Account == "" {
+			event.Meta.Account = e.AccountID
+		}
+		if event.Meta.Application == "" {
+			event.Meta.Application = e.ApplicationID
+		}
+		if event.Meta.Group == "" {
+			event.Meta.Group = e.GroupID
+		}
 		if !event.IsValid() {
 			for _, terr := range event.GetErrors() {
-				e.logger.Errorf("error encountered persisting entity '%s', '%s'", event.(*domain.Event).Meta.EntityID, terr)
+				e.logger.Errorf("error encountered persisting entity '%s', '%s'", event.Meta.EntityID, terr)
 			}
 			if e.unitOfWork {
 				e.logger.Warnf("rolling back saving events to %s", savePointID)
@@ -77,7 +95,7 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 			return event.GetErrors()[0]
 		}
 
-		gormEvent, err := NewGormEvent(event.(*domain.Event))
+		gormEvent, err := NewGormEvent(event)
 		if err != nil {
 			return err
 		}
@@ -186,7 +204,7 @@ func (e *EventRepositoryGorm) Remove(entities []domain.Entity) error {
 	return nil
 }
 
-var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger log.Ext1FieldLogger, ctx context.Context) (EventRepository, error) {
+var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger log.Ext1FieldLogger, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: db,
 	}), config)
@@ -195,7 +213,17 @@ var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOf
 	}
 	if useUnitOfWork {
 		transaction := gormDB.Begin()
-		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, ctx: ctx, unitOfWork: useUnitOfWork}, nil
+		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, ctx: ctx, unitOfWork: useUnitOfWork, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
 	}
-	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx}, nil
+	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
+}
+
+var NewBasicEventRepository = func(db *sql.DB, logger log.Ext1FieldLogger, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
+	gormDB, err := gorm.Open(postgres.New(postgres.Config{
+		Conn: db,
+	}), nil)
+	if err != nil {
+		return nil, err
+	}
+	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
 }

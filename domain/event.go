@@ -40,6 +40,7 @@ type EventMeta struct {
 	User        string `json:"user"`
 	Application string `json:"application"`
 	Account     string `json:"account"`
+	Group       string `json:"group"`
 	Created     string `json:"created"`
 }
 

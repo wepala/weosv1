@@ -1,7 +1,13 @@
 package domain
 
 //go:generate moq -out mocks_test.go -pkg domain_test . EventRepository
-
+type WeOSEntity interface {
+	Entity
+	GetUser() User
+	GetAccount() Account
+	SetUser(User)
+	SetAccount(Account)
+}
 type Entity interface {
 	ValueObject
 	GetID() string
