@@ -1,8 +1,8 @@
-package repositories_test
+package persistence_test
 
 import (
 	"github.com/wepala/weos/domain"
-	"github.com/wepala/weos/infrastructure/repositories"
+	"github.com/wepala/weos/persistence"
 	"testing"
 )
 
@@ -17,7 +17,7 @@ func TestEventDisptacher_Dispatch(t *testing.T) {
 		},
 		Version: 1,
 	}
-	dispatcher := &repositories.EventDisptacher{}
+	dispatcher := &persistence.EventDisptacher{}
 	handlersCalled := 0
 	dispatcher.AddSubscriber(func(event domain.Event) {
 		handlersCalled += 1

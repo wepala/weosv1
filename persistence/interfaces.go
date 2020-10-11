@@ -1,4 +1,4 @@
-package repositories
+package persistence
 
 import "github.com/wepala/weos/domain"
 

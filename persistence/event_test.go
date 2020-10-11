@@ -1,4 +1,4 @@
-package repositories_test
+package persistence_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos/domain"
-	"github.com/wepala/weos/infrastructure/repositories"
+	"github.com/wepala/weos/persistence"
 	"os"
 	"testing"
 )
@@ -61,11 +61,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestEventRepositoryGorm_Persist(t *testing.T) {
-	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "accountID", "applicationID", "user id", "group id")
+	eventRepository, err := persistence.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "accountID", "applicationID", "user id", "group id")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.(*repositories.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*persistence.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
@@ -127,11 +127,11 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
-	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	eventRepository, err := persistence.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.(*repositories.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*persistence.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
@@ -177,11 +177,11 @@ func TestSaveAggregateEvents(t *testing.T) {
 
 	baseAggregate := &BaseAggregate{}
 
-	eventRepository, err := repositories.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	eventRepository, err := persistence.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.(*repositories.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*persistence.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
