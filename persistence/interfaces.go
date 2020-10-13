@@ -18,3 +18,12 @@ type EventRepository interface {
 	GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*domain.Event, error)
 	AddSubscriber(handler EventHandler)
 }
+
+type Datastore interface {
+	Migrate() error
+}
+
+type Projection interface {
+	Datastore
+	GetEventHandler() EventHandler
+}
