@@ -11,9 +11,9 @@ func TestEventDisptacher_Dispatch(t *testing.T) {
 		Type:    "TEST_EVENT",
 		Payload: nil,
 		Meta: domain.EventMeta{
-			EntityID:    "some id",
-			Application: "applicationID",
-			Account:     "accountID",
+			EntityID: "some id",
+			Module:   "applicationID",
+			Account:  "accountID",
 		},
 		Version: 1,
 	}

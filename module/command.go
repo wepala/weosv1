@@ -1,10 +1,11 @@
-package application
+package module
 
 import (
 	"context"
 	"time"
 )
 
+//go:generate moq -out mocks_test.go -pkg application_test . Dispatcher
 //Command is a common interface that all incoming requests should implement.
 type Command struct {
 	Type     string      `json:"type"`
@@ -22,7 +23,7 @@ type CommandMetadata struct {
 }
 
 type Dispatcher interface {
-	Dispatch(context context.Context, command *Command) error
+	Dispatch(ctx context.Context, command *Command) error
 }
 
 //DefaultDispatcher is used to execute commands

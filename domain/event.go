@@ -35,13 +35,13 @@ var NewBasicEvent = func(eventType string, entityID string, payload interface{},
 }
 
 type EventMeta struct {
-	EntityID    string `json:"entity_id"`
-	SequenceNo  int64  `json:"sequenceNo"`
-	User        string `json:"user"`
-	Application string `json:"application"`
-	Account     string `json:"account"`
-	Group       string `json:"group"`
-	Created     string `json:"created"`
+	EntityID   string `json:"entity_id"`
+	SequenceNo int64  `json:"sequenceNo"`
+	User       string `json:"user"`
+	Module     string `json:"module"`
+	Account    string `json:"account"`
+	Group      string `json:"group"`
+	Created    string `json:"created"`
 }
 
 func (e *Event) IsValid() bool {

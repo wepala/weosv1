@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start resource: %s", err)
 	}
 
-	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
+	// exponential backoff-retry, because the module in the container might not be ready to accept connections yet
 	if err := pool.Retry(func() error {
 		var err error
 		db, err = sql.Open("postgres", fmt.Sprintf("host=localhost port=%s user=root password=secret sslmode=disable database=test", resource.GetPort("5432/tcp")))
@@ -121,7 +121,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		}
 
 		if applicationID != "applicationID" {
-			t.Errorf("expected the application id to be '%s', got '%s'", "applicationID", applicationID)
+			t.Errorf("expected the module id to be '%s', got '%s'", "applicationID", applicationID)
 		}
 	}
 }

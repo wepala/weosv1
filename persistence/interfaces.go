@@ -1,6 +1,11 @@
 package persistence
 
-import "github.com/wepala/weos/domain"
+//go:generate moq -out persistence_mocks_test.go -pkg persistence_test . EventRepository Projection
+
+import (
+	"context"
+	"github.com/wepala/weos/domain"
+)
 
 type Repository interface {
 	Persist(entities []domain.Entity) error
@@ -20,7 +25,7 @@ type EventRepository interface {
 }
 
 type Datastore interface {
-	Migrate() error
+	Migrate(ctx context.Context) error
 }
 
 type Projection interface {
