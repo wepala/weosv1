@@ -1,0 +1,37 @@
+name: Test module
+on: [push]
+
+env:
+  SLACK_CHANNEL: wecrm
+  SLACK_USERNAME: WeOS CRM
+  SLACK_ICON: https://github.com/wepala.png?size=48
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+  SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Configure git for private modules
+        run: git config --global url."https://${{ secrets.GO_MODULES_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.13.x
+      - name: Test
+        run: go test -v ./...
+      - name: Send success notification
+        uses: rtCamp/action-slack-notify@v2.0.0
+        env:
+          SLACK_COLOR: "#32BD65"
+          SLACK_MESSAGE: We were able to test your code without problems, not bad
+          SLACK_TITLE: Tests passed
+      - name: Send failure notification
+        uses: rtCamp/action-slack-notify@v2.0.0
+        if: failure()
+        env:
+          SLACK_COLOR: "#FF0000"
+          SLACK_MESSAGE: Tests failed. Please review the error in Github Actions
+          SLACK_TITLE: Test failed
