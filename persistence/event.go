@@ -50,14 +50,14 @@ func NewGormEvent(event *domain.Event) (GormEvent, error) {
 		Payload:       payload,
 		Type:          event.Type,
 		AccountID:     event.Meta.Account,
-		ApplicationID: event.Meta.Application,
+		ApplicationID: event.Meta.Module,
 		User:          event.Meta.User,
 		SequenceNo:    event.Meta.SequenceNo,
 	}, nil
 }
 
 func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
-	//TODO use the information in the context to get account info, application info.
+	//TODO use the information in the context to get account info, module info.
 	if len(entities) == 0 {
 		return nil
 	} //didn't think it should barf if an empty list is passed
@@ -77,8 +77,8 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 		if event.Meta.Account == "" {
 			event.Meta.Account = e.AccountID
 		}
-		if event.Meta.Application == "" {
-			event.Meta.Application = e.ApplicationID
+		if event.Meta.Module == "" {
+			event.Meta.Module = e.ApplicationID
 		}
 		if event.Meta.Group == "" {
 			event.Meta.Group = e.GroupID
@@ -123,11 +123,11 @@ func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*domain.Event, error)
 			Type:    event.Type,
 			Payload: json.RawMessage(event.Payload),
 			Meta: domain.EventMeta{
-				EntityID:    event.EntityID,
-				Account:     event.AccountID,
-				Application: event.ApplicationID,
-				User:        event.User,
-				SequenceNo:  event.SequenceNo,
+				EntityID:   event.EntityID,
+				Account:    event.AccountID,
+				Module:     event.ApplicationID,
+				User:       event.User,
+				SequenceNo: event.SequenceNo,
 			},
 			Version: 0,
 		})
@@ -149,11 +149,11 @@ func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start in
 			Type:    event.Type,
 			Payload: json.RawMessage(event.Payload),
 			Meta: domain.EventMeta{
-				EntityID:    event.EntityID,
-				Account:     event.AccountID,
-				Application: event.ApplicationID,
-				User:        event.User,
-				SequenceNo:  event.SequenceNo,
+				EntityID:   event.EntityID,
+				Account:    event.AccountID,
+				Module:     event.ApplicationID,
+				User:       event.User,
+				SequenceNo: event.SequenceNo,
 			},
 			Version: 0,
 		})
