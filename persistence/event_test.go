@@ -137,17 +137,17 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 	}
 	mockEvent, _ := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title string `json:"title"`
-	}{Title: "First Post"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
+	}{Title: "First Post"})
 
 	mockEvent2, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
-	}{Title: "Updated First Post", Description: "Lorem Ipsum"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
+	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
 	mockEvent3, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
-	}{Title: "Updated First Post", Description: "Finalizing Post"}, "1iNfTiCACptiXDzhS8ObTVUcTqu")
+	}{Title: "Updated First Post", Description: "Finalizing Post"})
 
 	err = eventRepository.Persist([]domain.Entity{mockEvent, mockEvent2, mockEvent3})
 	if err != nil {

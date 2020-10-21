@@ -16,7 +16,7 @@ type Event struct {
 	errors  []error
 }
 
-var NewBasicEvent = func(eventType string, entityID string, payload interface{}, creatorID string) (*Event, error) {
+var NewBasicEvent = func(eventType string, entityID string, payload interface{}) (*Event, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.NewDomainError("Unable to marshal event payload", eventType, entityID, err)
@@ -28,7 +28,6 @@ var NewBasicEvent = func(eventType string, entityID string, payload interface{},
 		Version: 1,
 		Meta: EventMeta{
 			EntityID: entityID,
-			User:     creatorID,
 			Created:  time.Now().Format(time.RFC3339Nano),
 		},
 	}, nil

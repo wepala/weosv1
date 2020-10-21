@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewBasicEvent(t *testing.T) {
-	event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil, "1iNqoXV2UJojRhMPJtaL3E5DKXZ")
+	event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil)
 	if event.Type != "TEST_EVENT" {
 		t.Errorf("expected event to be type '%s', got '%s'", "TEST_EVENT", event.Type)
 	}
@@ -18,14 +18,14 @@ func TestNewBasicEvent(t *testing.T) {
 
 func TestEvent_IsValid(t *testing.T) {
 	t.Run("valid event", func(t *testing.T) {
-		event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil, "1iNqoXV2UJojRhMPJtaL3E5DKXZ")
+		event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil)
 		if !event.IsValid() {
 			t.Errorf("expected the event to be valid")
 		}
 	})
 
 	t.Run("no entity id, event invalid", func(t *testing.T) {
-		event, _ := domain.NewBasicEvent("TEST_EVENT", "", nil, "1iNqoXV2UJojRhMPJtaL3E5DKXZ")
+		event, _ := domain.NewBasicEvent("TEST_EVENT", "", nil)
 		if event.IsValid() {
 			t.Fatalf("expected the event to be invalid")
 		}
