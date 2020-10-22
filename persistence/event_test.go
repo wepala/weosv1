@@ -96,7 +96,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		t.Fatalf("error encountered saving events '%s'", err)
 	}
 
-	if eventHandlerCalled == 1 {
+	if eventHandlerCalled != 1 {
 		t.Errorf("expected event handlers to be called %d time, called %d times", 1, eventHandlerCalled)
 	}
 
