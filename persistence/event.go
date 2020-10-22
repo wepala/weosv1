@@ -105,6 +105,10 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 	if db.Error != nil {
 		return db.Error
 	}
+
+	for _, entity := range entities {
+		e.eventDispatcher.Dispatch(*entity.(*domain.Event))
+	}
 	return nil
 }
 
