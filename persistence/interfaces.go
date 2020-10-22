@@ -22,6 +22,7 @@ type EventRepository interface {
 	GetByAggregate(ID string) ([]*domain.Event, error)
 	GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*domain.Event, error)
 	AddSubscriber(handler EventHandler)
+	GetSubscribers() ([]EventHandler, error)
 }
 
 type Datastore interface {

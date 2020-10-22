@@ -15,6 +15,7 @@ var (
 	lockEventRepositoryMockFlush                          sync.RWMutex
 	lockEventRepositoryMockGetByAggregate                 sync.RWMutex
 	lockEventRepositoryMockGetByAggregateAndSequenceRange sync.RWMutex
+	lockEventRepositoryMockGetSubscribers                 sync.RWMutex
 	lockEventRepositoryMockPersist                        sync.RWMutex
 	lockEventRepositoryMockRemove                         sync.RWMutex
 )
@@ -41,6 +42,9 @@ var _ persistence.EventRepository = &EventRepositoryMock{}
 //             GetByAggregateAndSequenceRangeFunc: func(ID string, start int64, end int64) ([]*domain.Event, error) {
 // 	               panic("mock out the GetByAggregateAndSequenceRange method")
 //             },
+//             GetSubscribersFunc: func() ([]persistence.EventHandler, error) {
+// 	               panic("mock out the GetSubscribers method")
+//             },
 //             PersistFunc: func(entities []domain.Entity) error {
 // 	               panic("mock out the Persist method")
 //             },
@@ -65,6 +69,9 @@ type EventRepositoryMock struct {
 
 	// GetByAggregateAndSequenceRangeFunc mocks the GetByAggregateAndSequenceRange method.
 	GetByAggregateAndSequenceRangeFunc func(ID string, start int64, end int64) ([]*domain.Event, error)
+
+	// GetSubscribersFunc mocks the GetSubscribers method.
+	GetSubscribersFunc func() ([]persistence.EventHandler, error)
 
 	// PersistFunc mocks the Persist method.
 	PersistFunc func(entities []domain.Entity) error
@@ -95,6 +102,9 @@ type EventRepositoryMock struct {
 			Start int64
 			// End is the end argument value.
 			End int64
+		}
+		// GetSubscribers holds details about calls to the GetSubscribers method.
+		GetSubscribers []struct {
 		}
 		// Persist holds details about calls to the Persist method.
 		Persist []struct {
@@ -233,6 +243,32 @@ func (mock *EventRepositoryMock) GetByAggregateAndSequenceRangeCalls() []struct 
 	lockEventRepositoryMockGetByAggregateAndSequenceRange.RLock()
 	calls = mock.calls.GetByAggregateAndSequenceRange
 	lockEventRepositoryMockGetByAggregateAndSequenceRange.RUnlock()
+	return calls
+}
+
+// GetSubscribers calls GetSubscribersFunc.
+func (mock *EventRepositoryMock) GetSubscribers() ([]persistence.EventHandler, error) {
+	if mock.GetSubscribersFunc == nil {
+		panic("EventRepositoryMock.GetSubscribersFunc: method is nil but EventRepository.GetSubscribers was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockEventRepositoryMockGetSubscribers.Lock()
+	mock.calls.GetSubscribers = append(mock.calls.GetSubscribers, callInfo)
+	lockEventRepositoryMockGetSubscribers.Unlock()
+	return mock.GetSubscribersFunc()
+}
+
+// GetSubscribersCalls gets all the calls that were made to GetSubscribers.
+// Check the length with:
+//     len(mockedEventRepository.GetSubscribersCalls())
+func (mock *EventRepositoryMock) GetSubscribersCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockEventRepositoryMockGetSubscribers.RLock()
+	calls = mock.calls.GetSubscribers
+	lockEventRepositoryMockGetSubscribers.RUnlock()
 	return calls
 }
 

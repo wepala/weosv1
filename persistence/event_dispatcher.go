@@ -36,4 +36,8 @@ func (e *EventDisptacher) AddSubscriber(handler EventHandler) {
 	e.handlers = append(e.handlers, handler)
 }
 
+func (e *EventDisptacher) GetSubscribers() []EventHandler {
+	return e.handlers
+}
+
 type EventHandler func(event domain.Event)

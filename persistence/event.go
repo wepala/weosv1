@@ -165,6 +165,10 @@ func (e *EventRepositoryGorm) AddSubscriber(handler EventHandler) {
 	e.eventDispatcher.AddSubscriber(handler)
 }
 
+func (e *EventRepositoryGorm) GetSubscribers() ([]EventHandler, error) {
+	return e.eventDispatcher.GetSubscribers(), nil
+}
+
 func (e *EventRepositoryGorm) Migrate() error {
 	event, err := NewGormEvent(&domain.Event{})
 	if err != nil {
