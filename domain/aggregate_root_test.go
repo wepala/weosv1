@@ -1,8 +1,9 @@
 package domain_test
 
 import (
-	"github.com/wepala/weos/domain"
 	"testing"
+
+	"github.com/wepala/weos/domain"
 )
 
 func TestAggregateRoot_DefaultReducer(t *testing.T) {
@@ -13,7 +14,7 @@ func TestAggregateRoot_DefaultReducer(t *testing.T) {
 
 	mockEvent, err := domain.NewBasicEvent("Event", "", &struct {
 		Title string `json:"title"`
-	}{Title: "Test"})
+	}{Title: "Test"}, 0)
 	if err != nil {
 		t.Fatalf("error creating mock event '%s'", err)
 	}
@@ -32,7 +33,7 @@ func TestAggregateRoot_NewAggregateFromEvents(t *testing.T) {
 
 	mockEvent, err := domain.NewBasicEvent("Event", "", &struct {
 		Title string `json:"title"`
-	}{Title: "Test"})
+	}{Title: "Test"}, 0)
 	if err != nil {
 		t.Fatalf("error creating mock event '%s'", err)
 	}

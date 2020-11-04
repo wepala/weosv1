@@ -1,12 +1,13 @@
 package domain_test
 
 import (
-	"github.com/wepala/weos/domain"
 	"testing"
+
+	"github.com/wepala/weos/domain"
 )
 
 func TestNewBasicEvent(t *testing.T) {
-	event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil)
+	event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil, 0)
 	if event.Type != "TEST_EVENT" {
 		t.Errorf("expected event to be type '%s', got '%s'", "TEST_EVENT", event.Type)
 	}
@@ -18,14 +19,14 @@ func TestNewBasicEvent(t *testing.T) {
 
 func TestEvent_IsValid(t *testing.T) {
 	t.Run("valid event", func(t *testing.T) {
-		event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil)
+		event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil, 0)
 		if !event.IsValid() {
 			t.Errorf("expected the event to be valid")
 		}
 	})
 
 	t.Run("no entity id, event invalid", func(t *testing.T) {
-		event, _ := domain.NewBasicEvent("TEST_EVENT", "", nil)
+		event, _ := domain.NewBasicEvent("TEST_EVENT", "", nil, 0)
 		if event.IsValid() {
 			t.Fatalf("expected the event to be invalid")
 		}

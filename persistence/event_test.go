@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"testing"
+
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos/domain"
 	"github.com/wepala/weos/persistence"
-	"os"
-	"testing"
 )
 
 var db *sql.DB
@@ -137,17 +138,17 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 	}
 	mockEvent, _ := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title string `json:"title"`
-	}{Title: "First Post"})
+	}{Title: "First Post"}, 0)
 
 	mockEvent2, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
-	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
+	}{Title: "Updated First Post", Description: "Lorem Ipsum"}, 0)
 
 	mockEvent3, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
-	}{Title: "Updated First Post", Description: "Finalizing Post"})
+	}{Title: "Updated First Post", Description: "Finalizing Post"}, 0)
 
 	err = eventRepository.Persist([]domain.Entity{mockEvent, mockEvent2, mockEvent3})
 	if err != nil {
