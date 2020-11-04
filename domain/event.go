@@ -2,9 +2,10 @@ package domain
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/segmentio/ksuid"
 	"github.com/wepala/weos/errors"
-	"time"
 )
 
 type Event struct {
@@ -16,7 +17,7 @@ type Event struct {
 	errors  []error
 }
 
-var NewBasicEvent = func(eventType string, entityID string, payload interface{}) (*Event, error) {
+var NewBasicEvent = func(eventType string, entityID string, payload interface{}, sequenceNo int64) (*Event, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.NewDomainError("Unable to marshal event payload", eventType, entityID, err)
@@ -27,8 +28,9 @@ var NewBasicEvent = func(eventType string, entityID string, payload interface{})
 		Payload: payloadBytes,
 		Version: 1,
 		Meta: EventMeta{
-			EntityID: entityID,
-			Created:  time.Now().Format(time.RFC3339Nano),
+			EntityID:   entityID,
+			Created:    time.Now().Format(time.RFC3339Nano),
+			SequenceNo: sequenceNo,
 		},
 	}, nil
 }
