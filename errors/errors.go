@@ -8,16 +8,16 @@ type WeOSError struct {
 	AccountID   string
 }
 
-func (e WeOSError) Error() string {
+func (e *WeOSError) Error() string {
 	return e.message
 }
 
-func (e WeOSError) Unwrap() error {
+func (e *WeOSError) Unwrap() error {
 	return e.err
 }
 
 type DomainError struct {
-	WeOSError
+	*WeOSError
 	EntityID   string
 	EntityType string
 }
@@ -31,7 +31,7 @@ func NewError(message string, err error) *WeOSError {
 
 func NewDomainError(message string, entityType string, entityID string, err error) *DomainError {
 	return &DomainError{
-		WeOSError:  *NewError(message, err),
+		WeOSError:  NewError(message, err),
 		EntityID:   entityID,
 		EntityType: entityType,
 	}
