@@ -8,11 +8,11 @@ type WeOSError struct {
 	AccountID   string
 }
 
-func (e *WeOSError) Error() string {
+func (e WeOSError) Error() string {
 	return e.message
 }
 
-func (e *WeOSError) Unwrap() error {
+func (e WeOSError) Unwrap() error {
 	return e.err
 }
 
