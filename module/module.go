@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos/errors"
 	"github.com/wepala/weos/persistence"
-	"net/http"
-	"strconv"
 )
 
 type WeOSModule interface {
@@ -78,13 +79,14 @@ func (w *WeOSMod) Migrate(ctx context.Context) error {
 }
 
 type WeOSModuleConfig struct {
-	ModuleID  string         `json:"moduleId"`
-	Title     string         `json:"title"`
-	AccountID string         `json:"accountId"`
-	Database  *WeOSDBConfig  `json:"database"`
-	Log       *WeOSLogConfig `json:"log"`
-	BaseURL   string         `json:"baseURL"`
-	LoginURL  string         `json:"loginURL"`
+	ModuleID    string         `json:"moduleId"`
+	Title       string         `json:"title"`
+	AccountID   string         `json:"accountId"`
+	AccountName string         `json:"accountName"`
+	Database    *WeOSDBConfig  `json:"database"`
+	Log         *WeOSLogConfig `json:"log"`
+	BaseURL     string         `json:"baseURL"`
+	LoginURL    string         `json:"loginURL"`
 }
 
 type WeOSDBConfig struct {
