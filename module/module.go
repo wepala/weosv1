@@ -83,6 +83,8 @@ type WeOSModuleConfig struct {
 	AccountID string         `json:"accountId"`
 	Database  *WeOSDBConfig  `json:"database"`
 	Log       *WeOSLogConfig `json:"log"`
+	BaseURL   string         `json:"baseURL"`
+	LoginURL  string         `json:"loginURL"`
 }
 
 type WeOSDBConfig struct {
