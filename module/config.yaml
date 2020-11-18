@@ -2,6 +2,10 @@ application:
   applicationId: ${APPLICATION_ID}
   applicationTitle: ${APPLICATION_TITLE}
   accountId: ${ACCOUNT_ID}
+  accountName: ${ACCOUNT_NAME}
+  baseURL: ${BASE_URL}
+  loginURL: ${LOGIN_URL}
+  queryURL: ${QUERY_URL}
   database:
     host: ${POSTGRES_HOST}
     database: ${POSTGRES_DB}
