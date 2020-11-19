@@ -87,6 +87,8 @@ type WeOSModuleConfig struct {
 	Log         *WeOSLogConfig `json:"log"`
 	BaseURL     string         `json:"baseURL"`
 	LoginURL    string         `json:"loginURL"`
+	GraphQLURL  string         `json:"graphQLURL"`
+	SessionKey  string         `json:"sessionKey"`
 }
 
 type WeOSDBConfig struct {
