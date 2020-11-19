@@ -6,6 +6,7 @@ application:
   baseURL: ${BASE_URL}
   loginURL: ${LOGIN_URL}
   graphQLUrl: ${GRAPHQL_URL}
+  sessionKey: ${SESSION_KEY}
   database:
     host: ${POSTGRES_HOST}
     database: ${POSTGRES_DB}
