@@ -114,7 +114,7 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 
 func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*domain.Event, error) {
 	var events []GormEvent
-	result := e.DB.Where("entity_id = ?", ID).Find(&events)
+	result := e.DB.Order("sequence_no asc").Where("entity_id = ?", ID).Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -141,7 +141,7 @@ func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*domain.Event, error)
 
 func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*domain.Event, error) {
 	var events []GormEvent
-	result := e.DB.Where("entity_id = ? AND sequence_no >=? AND sequence_no <= ?", ID, start, end).Find(&events)
+	result := e.DB.Order("sequence_no asc").Where("entity_id = ? AND sequence_no >=? AND sequence_no <= ?", ID, start, end).Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
 	}

@@ -33,6 +33,23 @@ var NewBasicEvent = func(eventType string, entityID string, payload interface{})
 	}, nil
 }
 
+var NewVersionEvent = func(eventType string, entityID string, payload interface{}, version int) (*Event, error) {
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, errors.NewDomainError("Unable to marshal event payload", eventType, entityID, err)
+	}
+	return &Event{
+		ID:      ksuid.New().String(),
+		Type:    eventType,
+		Payload: payloadBytes,
+		Version: version,
+		Meta: EventMeta{
+			EntityID: entityID,
+			Created:  time.Now().Format(time.RFC3339Nano),
+		},
+	}, nil
+}
+
 type EventMeta struct {
 	EntityID   string `json:"entity_id"`
 	SequenceNo int64  `json:"sequenceNo"`

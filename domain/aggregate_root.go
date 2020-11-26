@@ -31,6 +31,8 @@ func (w *AggregateRoot) SetAccount(account Account) {
 }
 
 func (w *AggregateRoot) NewChange(event *Event) {
+	w.SequenceNo = w.SequenceNo + 1
+	event.Meta.SequenceNo = w.SequenceNo
 	w.newEvents = append(w.newEvents, event)
 }
 
