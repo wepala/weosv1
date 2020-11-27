@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
@@ -33,7 +34,7 @@ type WeOSMod struct {
 	commandDispatcher Dispatcher
 	logger            log.Ext1FieldLogger
 	db                *sql.DB
-	httpClient        *http.Client
+	HttpClient        *http.Client
 	projections       []persistence.Projection
 }
 
@@ -110,7 +111,7 @@ type WeOSLogConfig struct {
 }
 
 //NewApplication creates a new basic module that allows for injecting of a few core components
-//func NewApplication(applicationID string, applicationTitle string, accountID string, logger log.Ext1FieldLogger, db *sql.DB, httpClient *http.Client ) *WeOSMod {
+//func NewApplication(applicationID string, applicationTitle string, accountID string, logger log.Ext1FieldLogger, db *sql.DB, HttpClient *http.Client ) *WeOSMod {
 //	return &WeOSMod{
 //		ModuleID:    applicationID,
 //		Title: applicationTitle,
@@ -118,7 +119,7 @@ type WeOSLogConfig struct {
 //		commandDispatcher:   &DefaultDispatcher{},
 //		logger: logger,
 //		db: db,
-//		httpClient: httpClient,
+//		HttpClient: HttpClient,
 //	}
 //}
 
@@ -184,6 +185,8 @@ var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger log.Ext1Fie
 		commandDispatcher: &DefaultDispatcher{},
 		logger:            logger,
 		db:                db,
-		httpClient:        nil,
+		HttpClient: &http.Client{
+			Timeout: time.Second * 10,
+		},
 	}, nil
 }
