@@ -8,6 +8,7 @@ application:
   graphQLUrl: ${GRAPHQL_URL}
   sessionKey: ${SESSION_KEY}
   secret: ${SECRET}
+  accountURL: ${ACCOUNT_URL}
   database:
     host: ${POSTGRES_HOST}
     database: ${POSTGRES_DB}

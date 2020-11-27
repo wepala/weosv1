@@ -36,6 +36,7 @@ type WeOSMod struct {
 	db                *sql.DB
 	HttpClient        *http.Client
 	projections       []persistence.Projection
+	AccountURL        string `json:"accountURL"`
 }
 
 func (w *WeOSMod) GetModuleID() string {
@@ -91,6 +92,7 @@ type WeOSModuleConfig struct {
 	GraphQLURL  string         `json:"graphQLURL"`
 	SessionKey  string         `json:"sessionKey"`
 	Secret      string         `json:"secret"`
+	AccountURL  string         `json:"accountURL"`
 }
 
 type WeOSDBConfig struct {
@@ -185,6 +187,7 @@ var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger log.Ext1Fie
 		commandDispatcher: &DefaultDispatcher{},
 		logger:            logger,
 		db:                db,
+		AccountURL:        config.AccountURL,
 		HttpClient: &http.Client{
 			Timeout: time.Second * 10,
 		},
