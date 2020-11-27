@@ -16,8 +16,9 @@ func (e *EventDisptacher) Dispatch(event domain.Event) {
 	e.dispatch.Lock()
 	defer e.dispatch.Unlock()
 	var wg sync.WaitGroup
-	wg.Add(len(e.handlers))
-	for _, handler := range e.handlers {
+	for i := 0; i < len(e.handlers); i++ {
+		handler := e.handlers[i]
+		wg.Add(1)
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
