@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/segmentio/ksuid"
-	log "github.com/sirupsen/logrus"
+	"github.com/wepala/weos"
 	"github.com/wepala/weos/domain"
 	"gorm.io/datatypes"
 	"gorm.io/driver/postgres"
@@ -16,7 +16,7 @@ type EventRepositoryGorm struct {
 	DB              *gorm.DB
 	gormDB          *gorm.DB
 	eventDispatcher EventDisptacher
-	logger          log.Ext1FieldLogger
+	logger          weos.Log
 	ctx             context.Context
 	unitOfWork      bool
 	AccountID       string
@@ -212,7 +212,7 @@ func (e *EventRepositoryGorm) Remove(entities []domain.Entity) error {
 	return nil
 }
 
-var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger log.Ext1FieldLogger, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
+var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger weos.Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: db,
 	}), config)
@@ -226,7 +226,7 @@ var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOf
 	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
 }
 
-var NewBasicEventRepository = func(db *sql.DB, logger log.Ext1FieldLogger, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
+var NewBasicEventRepository = func(db *sql.DB, logger weos.Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: db,
 	}), nil)
