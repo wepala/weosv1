@@ -4,22 +4,42 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
-	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos/errors"
 	"github.com/wepala/weos/persistence"
 )
+
+type Log interface {
+	Debugf(format string, args ...interface{})
+	Infof(format string, args ...interface{})
+	Printf(format string, args ...interface{})
+	Warnf(format string, args ...interface{})
+	Warningf(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Panicf(format string, args ...interface{})
+
+	Debug(args ...interface{})
+	Info(args ...interface{})
+	Print(args ...interface{})
+	Warn(args ...interface{})
+	Warning(args ...interface{})
+	Error(args ...interface{})
+	Fatal(args ...interface{})
+	Panic(args ...interface{})
+}
 
 type WeOSModule interface {
 	GetModuleID() string
 	GetTitle() string
 	GetAccountID() string
 	GetDBConnection() *sql.DB
-	GetLogger() log.Ext1FieldLogger
+	GetLogger() Log
 	AddProjection(projection persistence.Projection) error
 	GetProjections() []persistence.Projection
 	Migrate(ctx context.Context) error
@@ -32,7 +52,7 @@ type WeOSMod struct {
 	Title             string `json:"title"`
 	AccountID         string `json:"accountId"`
 	commandDispatcher Dispatcher
-	logger            log.Ext1FieldLogger
+	logger            Log
 	db                *sql.DB
 	HttpClient        *http.Client
 	projections       []persistence.Projection
@@ -55,7 +75,7 @@ func (w *WeOSMod) GetDBConnection() *sql.DB {
 	return w.db
 }
 
-func (w *WeOSMod) GetLogger() log.Ext1FieldLogger {
+func (w *WeOSMod) GetLogger() Log {
 	return w.logger
 }
 
@@ -69,7 +89,7 @@ func (w *WeOSMod) GetProjections() []persistence.Projection {
 }
 
 func (w *WeOSMod) Migrate(ctx context.Context) error {
-	w.logger.WithField("module", w.Title).Infof("preparing to migrate %d projections", len(w.projections))
+	w.logger.Infof("preparing to migrate %d projections", len(w.projections))
 	for _, projection := range w.projections {
 		err := projection.Migrate(ctx)
 		if err != nil {
@@ -113,7 +133,7 @@ type WeOSLogConfig struct {
 }
 
 //NewApplication creates a new basic module that allows for injecting of a few core components
-//func NewApplication(applicationID string, applicationTitle string, accountID string, logger log.Ext1FieldLogger, db *sql.DB, HttpClient *http.Client ) *WeOSMod {
+//func NewApplication(applicationID string, applicationTitle string, accountID string, logger Log, db *sql.DB, HttpClient *http.Client ) *WeOSMod {
 //	return &WeOSMod{
 //		ModuleID:    applicationID,
 //		Title: applicationTitle,
@@ -125,7 +145,7 @@ type WeOSLogConfig struct {
 //	}
 //}
 
-var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger log.Ext1FieldLogger, db *sql.DB) (*WeOSMod, error) {
+var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger Log, db *sql.DB) (*WeOSMod, error) {
 
 	var err error
 
