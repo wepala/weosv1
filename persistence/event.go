@@ -88,7 +88,7 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 				e.logger.Errorf("error encountered persisting entity '%s', '%s'", event.Meta.EntityID, terr)
 			}
 			if e.unitOfWork {
-				e.logger.Warnf("rolling back saving events to %s", savePointID)
+				e.logger.Debugf("rolling back saving events to %s", savePointID)
 				e.DB.RollbackTo(savePointID)
 			}
 
