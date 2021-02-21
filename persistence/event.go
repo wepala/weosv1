@@ -29,6 +29,7 @@ type GormEvent struct {
 	gorm.Model
 	ID            string
 	EntityID      string `gorm:"index"`
+	EntityType    string `gorm:"index"`
 	Payload       datatypes.JSON
 	Type          string `gorm:"index"`
 	AccountID     string `gorm:"index"`
@@ -47,6 +48,7 @@ func NewGormEvent(event *domain.Event) (GormEvent, error) {
 	return GormEvent{
 		ID:            event.ID,
 		EntityID:      event.Meta.EntityID,
+		EntityType:    event.Meta.EntityType,
 		Payload:       payload,
 		Type:          event.Type,
 		AccountID:     event.Meta.Account,
@@ -128,6 +130,35 @@ func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*domain.Event, error)
 			Payload: json.RawMessage(event.Payload),
 			Meta: domain.EventMeta{
 				EntityID:   event.EntityID,
+				EntityType: event.EntityType,
+				Account:    event.AccountID,
+				Module:     event.ApplicationID,
+				User:       event.User,
+				SequenceNo: event.SequenceNo,
+			},
+			Version: 0,
+		})
+	}
+	return tevents, nil
+}
+
+func (e *EventRepositoryGorm) GetByAggregateAndType(ID string, entityType string) ([]*domain.Event, error) {
+	var events []GormEvent
+	result := e.DB.Order("sequence_no asc").Where("entity_id = ? AND entity_type = ?", ID, entityType).Find(&events)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	var tevents []*domain.Event
+
+	for _, event := range events {
+		tevents = append(tevents, &domain.Event{
+			ID:      event.ID,
+			Type:    event.Type,
+			Payload: json.RawMessage(event.Payload),
+			Meta: domain.EventMeta{
+				EntityID:   event.EntityID,
+				EntityType: event.EntityType,
 				Account:    event.AccountID,
 				Module:     event.ApplicationID,
 				User:       event.User,
@@ -154,6 +185,7 @@ func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start in
 			Payload: json.RawMessage(event.Payload),
 			Meta: domain.EventMeta{
 				EntityID:   event.EntityID,
+				EntityType: event.EntityType,
 				Account:    event.AccountID,
 				Module:     event.ApplicationID,
 				User:       event.User,

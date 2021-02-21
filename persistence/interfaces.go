@@ -20,6 +20,7 @@ type EventRepository interface {
 	Repository
 	UnitOfWorkRepository
 	GetByAggregate(ID string) ([]*domain.Event, error)
+	GetByAggregateAndType(ID string, entityType string) ([]*domain.Event, error)
 	GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*domain.Event, error)
 	AddSubscriber(handler EventHandler)
 	GetSubscribers() ([]EventHandler, error)
