@@ -16,7 +16,7 @@ type Event struct {
 	errors  []error
 }
 
-var NewBasicEvent = func(eventType string, entityID string, payload interface{}) (*Event, error) {
+var NewBasicEvent = func(eventType string, entityID string, entityType string, payload interface{}) (*Event, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.NewDomainError("Unable to marshal event payload", eventType, entityID, err)
@@ -27,8 +27,9 @@ var NewBasicEvent = func(eventType string, entityID string, payload interface{})
 		Payload: payloadBytes,
 		Version: 1,
 		Meta: EventMeta{
-			EntityID: entityID,
-			Created:  time.Now().Format(time.RFC3339Nano),
+			EntityID:   entityID,
+			EntityType: entityType,
+			Created:    time.Now().Format(time.RFC3339Nano),
 		},
 	}, nil
 }
@@ -52,6 +53,7 @@ var NewVersionEvent = func(eventType string, entityID string, payload interface{
 
 type EventMeta struct {
 	EntityID   string `json:"entity_id"`
+	EntityType string `json:"entity_type"`
 	SequenceNo int64  `json:"sequenceNo"`
 	User       string `json:"user"`
 	Module     string `json:"module"`
@@ -78,6 +80,11 @@ func (e *Event) IsValid() bool {
 
 	if e.Type == "" {
 		e.AddError(errors.NewDomainError("all domain events must have a type", "Event", e.Meta.EntityID, nil))
+		return false
+	}
+
+	if e.Meta.EntityType == "" {
+		e.AddError(errors.NewDomainError("all domain events must have an entity type", "Event", e.Meta.EntityID, nil))
 		return false
 	}
 

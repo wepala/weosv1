@@ -10,53 +10,46 @@ import (
 	"sync"
 )
 
-var (
-	lockEventRepositoryMockAddSubscriber                  sync.RWMutex
-	lockEventRepositoryMockFlush                          sync.RWMutex
-	lockEventRepositoryMockGetByAggregate                 sync.RWMutex
-	lockEventRepositoryMockGetByAggregateAndSequenceRange sync.RWMutex
-	lockEventRepositoryMockGetSubscribers                 sync.RWMutex
-	lockEventRepositoryMockPersist                        sync.RWMutex
-	lockEventRepositoryMockRemove                         sync.RWMutex
-)
-
 // Ensure, that EventRepositoryMock does implement persistence.EventRepository.
 // If this is not the case, regenerate this file with moq.
 var _ persistence.EventRepository = &EventRepositoryMock{}
 
 // EventRepositoryMock is a mock implementation of persistence.EventRepository.
 //
-//     func TestSomethingThatUsesEventRepository(t *testing.T) {
+// 	func TestSomethingThatUsesEventRepository(t *testing.T) {
 //
-//         // make and configure a mocked persistence.EventRepository
-//         mockedEventRepository := &EventRepositoryMock{
-//             AddSubscriberFunc: func(handler persistence.EventHandler)  {
-// 	               panic("mock out the AddSubscriber method")
-//             },
-//             FlushFunc: func() error {
-// 	               panic("mock out the Flush method")
-//             },
-//             GetByAggregateFunc: func(ID string) ([]*domain.Event, error) {
-// 	               panic("mock out the GetByAggregate method")
-//             },
-//             GetByAggregateAndSequenceRangeFunc: func(ID string, start int64, end int64) ([]*domain.Event, error) {
-// 	               panic("mock out the GetByAggregateAndSequenceRange method")
-//             },
-//             GetSubscribersFunc: func() ([]persistence.EventHandler, error) {
-// 	               panic("mock out the GetSubscribers method")
-//             },
-//             PersistFunc: func(entities []domain.Entity) error {
-// 	               panic("mock out the Persist method")
-//             },
-//             RemoveFunc: func(entities []domain.Entity) error {
-// 	               panic("mock out the Remove method")
-//             },
-//         }
+// 		// make and configure a mocked persistence.EventRepository
+// 		mockedEventRepository := &EventRepositoryMock{
+// 			AddSubscriberFunc: func(handler persistence.EventHandler)  {
+// 				panic("mock out the AddSubscriber method")
+// 			},
+// 			FlushFunc: func() error {
+// 				panic("mock out the Flush method")
+// 			},
+// 			GetByAggregateFunc: func(ID string) ([]*domain.Event, error) {
+// 				panic("mock out the GetByAggregate method")
+// 			},
+// 			GetByAggregateAndSequenceRangeFunc: func(ID string, start int64, end int64) ([]*domain.Event, error) {
+// 				panic("mock out the GetByAggregateAndSequenceRange method")
+// 			},
+// 			GetByAggregateAndTypeFunc: func(ID string, entityType string) ([]*domain.Event, error) {
+// 				panic("mock out the GetByAggregateAndType method")
+// 			},
+// 			GetSubscribersFunc: func() ([]persistence.EventHandler, error) {
+// 				panic("mock out the GetSubscribers method")
+// 			},
+// 			PersistFunc: func(entities []domain.Entity) error {
+// 				panic("mock out the Persist method")
+// 			},
+// 			RemoveFunc: func(entities []domain.Entity) error {
+// 				panic("mock out the Remove method")
+// 			},
+// 		}
 //
-//         // use mockedEventRepository in code that requires persistence.EventRepository
-//         // and then make assertions.
+// 		// use mockedEventRepository in code that requires persistence.EventRepository
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type EventRepositoryMock struct {
 	// AddSubscriberFunc mocks the AddSubscriber method.
 	AddSubscriberFunc func(handler persistence.EventHandler)
@@ -69,6 +62,9 @@ type EventRepositoryMock struct {
 
 	// GetByAggregateAndSequenceRangeFunc mocks the GetByAggregateAndSequenceRange method.
 	GetByAggregateAndSequenceRangeFunc func(ID string, start int64, end int64) ([]*domain.Event, error)
+
+	// GetByAggregateAndTypeFunc mocks the GetByAggregateAndType method.
+	GetByAggregateAndTypeFunc func(ID string, entityType string) ([]*domain.Event, error)
 
 	// GetSubscribersFunc mocks the GetSubscribers method.
 	GetSubscribersFunc func() ([]persistence.EventHandler, error)
@@ -103,6 +99,13 @@ type EventRepositoryMock struct {
 			// End is the end argument value.
 			End int64
 		}
+		// GetByAggregateAndType holds details about calls to the GetByAggregateAndType method.
+		GetByAggregateAndType []struct {
+			// ID is the ID argument value.
+			ID string
+			// EntityType is the entityType argument value.
+			EntityType string
+		}
 		// GetSubscribers holds details about calls to the GetSubscribers method.
 		GetSubscribers []struct {
 		}
@@ -117,6 +120,14 @@ type EventRepositoryMock struct {
 			Entities []domain.Entity
 		}
 	}
+	lockAddSubscriber                  sync.RWMutex
+	lockFlush                          sync.RWMutex
+	lockGetByAggregate                 sync.RWMutex
+	lockGetByAggregateAndSequenceRange sync.RWMutex
+	lockGetByAggregateAndType          sync.RWMutex
+	lockGetSubscribers                 sync.RWMutex
+	lockPersist                        sync.RWMutex
+	lockRemove                         sync.RWMutex
 }
 
 // AddSubscriber calls AddSubscriberFunc.
@@ -129,9 +140,9 @@ func (mock *EventRepositoryMock) AddSubscriber(handler persistence.EventHandler)
 	}{
 		Handler: handler,
 	}
-	lockEventRepositoryMockAddSubscriber.Lock()
+	mock.lockAddSubscriber.Lock()
 	mock.calls.AddSubscriber = append(mock.calls.AddSubscriber, callInfo)
-	lockEventRepositoryMockAddSubscriber.Unlock()
+	mock.lockAddSubscriber.Unlock()
 	mock.AddSubscriberFunc(handler)
 }
 
@@ -144,9 +155,9 @@ func (mock *EventRepositoryMock) AddSubscriberCalls() []struct {
 	var calls []struct {
 		Handler persistence.EventHandler
 	}
-	lockEventRepositoryMockAddSubscriber.RLock()
+	mock.lockAddSubscriber.RLock()
 	calls = mock.calls.AddSubscriber
-	lockEventRepositoryMockAddSubscriber.RUnlock()
+	mock.lockAddSubscriber.RUnlock()
 	return calls
 }
 
@@ -157,9 +168,9 @@ func (mock *EventRepositoryMock) Flush() error {
 	}
 	callInfo := struct {
 	}{}
-	lockEventRepositoryMockFlush.Lock()
+	mock.lockFlush.Lock()
 	mock.calls.Flush = append(mock.calls.Flush, callInfo)
-	lockEventRepositoryMockFlush.Unlock()
+	mock.lockFlush.Unlock()
 	return mock.FlushFunc()
 }
 
@@ -170,9 +181,9 @@ func (mock *EventRepositoryMock) FlushCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockEventRepositoryMockFlush.RLock()
+	mock.lockFlush.RLock()
 	calls = mock.calls.Flush
-	lockEventRepositoryMockFlush.RUnlock()
+	mock.lockFlush.RUnlock()
 	return calls
 }
 
@@ -186,9 +197,9 @@ func (mock *EventRepositoryMock) GetByAggregate(ID string) ([]*domain.Event, err
 	}{
 		ID: ID,
 	}
-	lockEventRepositoryMockGetByAggregate.Lock()
+	mock.lockGetByAggregate.Lock()
 	mock.calls.GetByAggregate = append(mock.calls.GetByAggregate, callInfo)
-	lockEventRepositoryMockGetByAggregate.Unlock()
+	mock.lockGetByAggregate.Unlock()
 	return mock.GetByAggregateFunc(ID)
 }
 
@@ -201,9 +212,9 @@ func (mock *EventRepositoryMock) GetByAggregateCalls() []struct {
 	var calls []struct {
 		ID string
 	}
-	lockEventRepositoryMockGetByAggregate.RLock()
+	mock.lockGetByAggregate.RLock()
 	calls = mock.calls.GetByAggregate
-	lockEventRepositoryMockGetByAggregate.RUnlock()
+	mock.lockGetByAggregate.RUnlock()
 	return calls
 }
 
@@ -221,9 +232,9 @@ func (mock *EventRepositoryMock) GetByAggregateAndSequenceRange(ID string, start
 		Start: start,
 		End:   end,
 	}
-	lockEventRepositoryMockGetByAggregateAndSequenceRange.Lock()
+	mock.lockGetByAggregateAndSequenceRange.Lock()
 	mock.calls.GetByAggregateAndSequenceRange = append(mock.calls.GetByAggregateAndSequenceRange, callInfo)
-	lockEventRepositoryMockGetByAggregateAndSequenceRange.Unlock()
+	mock.lockGetByAggregateAndSequenceRange.Unlock()
 	return mock.GetByAggregateAndSequenceRangeFunc(ID, start, end)
 }
 
@@ -240,9 +251,44 @@ func (mock *EventRepositoryMock) GetByAggregateAndSequenceRangeCalls() []struct 
 		Start int64
 		End   int64
 	}
-	lockEventRepositoryMockGetByAggregateAndSequenceRange.RLock()
+	mock.lockGetByAggregateAndSequenceRange.RLock()
 	calls = mock.calls.GetByAggregateAndSequenceRange
-	lockEventRepositoryMockGetByAggregateAndSequenceRange.RUnlock()
+	mock.lockGetByAggregateAndSequenceRange.RUnlock()
+	return calls
+}
+
+// GetByAggregateAndType calls GetByAggregateAndTypeFunc.
+func (mock *EventRepositoryMock) GetByAggregateAndType(ID string, entityType string) ([]*domain.Event, error) {
+	if mock.GetByAggregateAndTypeFunc == nil {
+		panic("EventRepositoryMock.GetByAggregateAndTypeFunc: method is nil but EventRepository.GetByAggregateAndType was just called")
+	}
+	callInfo := struct {
+		ID         string
+		EntityType string
+	}{
+		ID:         ID,
+		EntityType: entityType,
+	}
+	mock.lockGetByAggregateAndType.Lock()
+	mock.calls.GetByAggregateAndType = append(mock.calls.GetByAggregateAndType, callInfo)
+	mock.lockGetByAggregateAndType.Unlock()
+	return mock.GetByAggregateAndTypeFunc(ID, entityType)
+}
+
+// GetByAggregateAndTypeCalls gets all the calls that were made to GetByAggregateAndType.
+// Check the length with:
+//     len(mockedEventRepository.GetByAggregateAndTypeCalls())
+func (mock *EventRepositoryMock) GetByAggregateAndTypeCalls() []struct {
+	ID         string
+	EntityType string
+} {
+	var calls []struct {
+		ID         string
+		EntityType string
+	}
+	mock.lockGetByAggregateAndType.RLock()
+	calls = mock.calls.GetByAggregateAndType
+	mock.lockGetByAggregateAndType.RUnlock()
 	return calls
 }
 
@@ -253,9 +299,9 @@ func (mock *EventRepositoryMock) GetSubscribers() ([]persistence.EventHandler, e
 	}
 	callInfo := struct {
 	}{}
-	lockEventRepositoryMockGetSubscribers.Lock()
+	mock.lockGetSubscribers.Lock()
 	mock.calls.GetSubscribers = append(mock.calls.GetSubscribers, callInfo)
-	lockEventRepositoryMockGetSubscribers.Unlock()
+	mock.lockGetSubscribers.Unlock()
 	return mock.GetSubscribersFunc()
 }
 
@@ -266,9 +312,9 @@ func (mock *EventRepositoryMock) GetSubscribersCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockEventRepositoryMockGetSubscribers.RLock()
+	mock.lockGetSubscribers.RLock()
 	calls = mock.calls.GetSubscribers
-	lockEventRepositoryMockGetSubscribers.RUnlock()
+	mock.lockGetSubscribers.RUnlock()
 	return calls
 }
 
@@ -282,9 +328,9 @@ func (mock *EventRepositoryMock) Persist(entities []domain.Entity) error {
 	}{
 		Entities: entities,
 	}
-	lockEventRepositoryMockPersist.Lock()
+	mock.lockPersist.Lock()
 	mock.calls.Persist = append(mock.calls.Persist, callInfo)
-	lockEventRepositoryMockPersist.Unlock()
+	mock.lockPersist.Unlock()
 	return mock.PersistFunc(entities)
 }
 
@@ -297,9 +343,9 @@ func (mock *EventRepositoryMock) PersistCalls() []struct {
 	var calls []struct {
 		Entities []domain.Entity
 	}
-	lockEventRepositoryMockPersist.RLock()
+	mock.lockPersist.RLock()
 	calls = mock.calls.Persist
-	lockEventRepositoryMockPersist.RUnlock()
+	mock.lockPersist.RUnlock()
 	return calls
 }
 
@@ -313,9 +359,9 @@ func (mock *EventRepositoryMock) Remove(entities []domain.Entity) error {
 	}{
 		Entities: entities,
 	}
-	lockEventRepositoryMockRemove.Lock()
+	mock.lockRemove.Lock()
 	mock.calls.Remove = append(mock.calls.Remove, callInfo)
-	lockEventRepositoryMockRemove.Unlock()
+	mock.lockRemove.Unlock()
 	return mock.RemoveFunc(entities)
 }
 
@@ -328,16 +374,11 @@ func (mock *EventRepositoryMock) RemoveCalls() []struct {
 	var calls []struct {
 		Entities []domain.Entity
 	}
-	lockEventRepositoryMockRemove.RLock()
+	mock.lockRemove.RLock()
 	calls = mock.calls.Remove
-	lockEventRepositoryMockRemove.RUnlock()
+	mock.lockRemove.RUnlock()
 	return calls
 }
-
-var (
-	lockProjectionMockGetEventHandler sync.RWMutex
-	lockProjectionMockMigrate         sync.RWMutex
-)
 
 // Ensure, that ProjectionMock does implement persistence.Projection.
 // If this is not the case, regenerate this file with moq.
@@ -345,22 +386,22 @@ var _ persistence.Projection = &ProjectionMock{}
 
 // ProjectionMock is a mock implementation of persistence.Projection.
 //
-//     func TestSomethingThatUsesProjection(t *testing.T) {
+// 	func TestSomethingThatUsesProjection(t *testing.T) {
 //
-//         // make and configure a mocked persistence.Projection
-//         mockedProjection := &ProjectionMock{
-//             GetEventHandlerFunc: func() persistence.EventHandler {
-// 	               panic("mock out the GetEventHandler method")
-//             },
-//             MigrateFunc: func(ctx context.Context) error {
-// 	               panic("mock out the Migrate method")
-//             },
-//         }
+// 		// make and configure a mocked persistence.Projection
+// 		mockedProjection := &ProjectionMock{
+// 			GetEventHandlerFunc: func() persistence.EventHandler {
+// 				panic("mock out the GetEventHandler method")
+// 			},
+// 			MigrateFunc: func(ctx context.Context) error {
+// 				panic("mock out the Migrate method")
+// 			},
+// 		}
 //
-//         // use mockedProjection in code that requires persistence.Projection
-//         // and then make assertions.
+// 		// use mockedProjection in code that requires persistence.Projection
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type ProjectionMock struct {
 	// GetEventHandlerFunc mocks the GetEventHandler method.
 	GetEventHandlerFunc func() persistence.EventHandler
@@ -379,6 +420,8 @@ type ProjectionMock struct {
 			Ctx context.Context
 		}
 	}
+	lockGetEventHandler sync.RWMutex
+	lockMigrate         sync.RWMutex
 }
 
 // GetEventHandler calls GetEventHandlerFunc.
@@ -388,9 +431,9 @@ func (mock *ProjectionMock) GetEventHandler() persistence.EventHandler {
 	}
 	callInfo := struct {
 	}{}
-	lockProjectionMockGetEventHandler.Lock()
+	mock.lockGetEventHandler.Lock()
 	mock.calls.GetEventHandler = append(mock.calls.GetEventHandler, callInfo)
-	lockProjectionMockGetEventHandler.Unlock()
+	mock.lockGetEventHandler.Unlock()
 	return mock.GetEventHandlerFunc()
 }
 
@@ -401,9 +444,9 @@ func (mock *ProjectionMock) GetEventHandlerCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockProjectionMockGetEventHandler.RLock()
+	mock.lockGetEventHandler.RLock()
 	calls = mock.calls.GetEventHandler
-	lockProjectionMockGetEventHandler.RUnlock()
+	mock.lockGetEventHandler.RUnlock()
 	return calls
 }
 
@@ -417,9 +460,9 @@ func (mock *ProjectionMock) Migrate(ctx context.Context) error {
 	}{
 		Ctx: ctx,
 	}
-	lockProjectionMockMigrate.Lock()
+	mock.lockMigrate.Lock()
 	mock.calls.Migrate = append(mock.calls.Migrate, callInfo)
-	lockProjectionMockMigrate.Unlock()
+	mock.lockMigrate.Unlock()
 	return mock.MigrateFunc(ctx)
 }
 
@@ -432,8 +475,8 @@ func (mock *ProjectionMock) MigrateCalls() []struct {
 	var calls []struct {
 		Ctx context.Context
 	}
-	lockProjectionMockMigrate.RLock()
+	mock.lockMigrate.RLock()
 	calls = mock.calls.Migrate
-	lockProjectionMockMigrate.RUnlock()
+	mock.lockMigrate.RUnlock()
 	return calls
 }

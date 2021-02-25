@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewBasicEvent(t *testing.T) {
-	event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil)
+	event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
 	if event.Type != "TEST_EVENT" {
 		t.Errorf("expected event to be type '%s', got '%s'", "TEST_EVENT", event.Type)
 	}
@@ -14,18 +14,22 @@ func TestNewBasicEvent(t *testing.T) {
 	if event.Meta.EntityID != "1iNqlx5htN0oJ3viyfWkAofJX7k" {
 		t.Errorf("expected the entity id to be '%s', got'%s'", "1iNqlx5htN0oJ3viyfWkAofJX7k", event.Meta.EntityID)
 	}
+
+	if event.Meta.EntityType != "BaseAggregate" {
+		t.Errorf("expected the entity to have entityType '%s', got '%s'", "BaseAggregate", event.Meta.EntityType)
+	}
 }
 
 func TestEvent_IsValid(t *testing.T) {
 	t.Run("valid event", func(t *testing.T) {
-		event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", nil)
+		event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
 		if !event.IsValid() {
 			t.Errorf("expected the event to be valid")
 		}
 	})
 
 	t.Run("no entity id, event invalid", func(t *testing.T) {
-		event, _ := domain.NewBasicEvent("TEST_EVENT", "", nil)
+		event, _ := domain.NewBasicEvent("TEST_EVENT", "", "BaseAggregate", nil)
 		if event.IsValid() {
 			t.Fatalf("expected the event to be invalid")
 		}

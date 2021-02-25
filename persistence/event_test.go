@@ -76,6 +76,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		Payload: nil,
 		Meta: domain.EventMeta{
 			EntityID:   "some id",
+			EntityType: "SomeType",
 			SequenceNo: 0,
 		},
 		Version: 1,
@@ -135,16 +136,16 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
-	mockEvent, _ := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent, _ := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"})
 
-	mockEvent2, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent2, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
-	mockEvent3, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent3, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
@@ -160,6 +161,49 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 	}
 
 	events, err := eventRepository.GetByAggregate("1iNfR0jYD9UbYocH8D3WK6N4pG9")
+	if err != nil {
+		t.Fatalf("encountered error getting aggregate '%s' error: '%s'", "1iNfR0jYD9UbYocH8D3WK6N4pG9", err)
+	}
+
+	if len(events) != 3 {
+		t.Errorf("expected %d events got %d", 3, len(events))
+	}
+}
+
+func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
+	eventRepository, err := persistence.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	if err != nil {
+		t.Fatalf("error encountered creating event repository '%s'", err)
+	}
+	err = eventRepository.(*persistence.EventRepositoryGorm).Migrate()
+	if err != nil {
+		t.Fatalf("error encountered migration event repository '%s'", err)
+	}
+	mockEvent, _ := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+		Title string `json:"title"`
+	}{Title: "First Post"})
+
+	mockEvent2, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
+
+	mockEvent3, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}{Title: "Updated First Post", Description: "Finalizing Post"})
+
+	err = eventRepository.Persist([]domain.Entity{mockEvent, mockEvent2, mockEvent3})
+	if err != nil {
+		t.Fatalf("error encountered persisting events '%s'", err)
+	}
+
+	err = eventRepository.Flush()
+	if err != nil {
+		t.Fatalf("error encountered flushing events '%s'", err)
+	}
+
+	events, err := eventRepository.GetByAggregateAndType("1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate")
 	if err != nil {
 		t.Fatalf("encountered error getting aggregate '%s' error: '%s'", "1iNfR0jYD9UbYocH8D3WK6N4pG9", err)
 	}
