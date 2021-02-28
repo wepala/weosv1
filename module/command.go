@@ -1,25 +1,26 @@
 package module
 
 import (
-	"context"
+	"encoding/json"
+	"golang.org/x/net/context"
 	"time"
 )
 
-//go:generate moq -out mocks_test.go -pkg application_test . Dispatcher
+//go:generate moq -out mocks_test.go -pkg module_test . Dispatcher
 //Command is a common interface that all incoming requests should implement.
 type Command struct {
-	Type     string      `json:"type"`
-	Payload  interface{} `json:"payload"`
+	Type     string          `json:"type"`
+	Payload  json.RawMessage `json:"payload"`
 	Execute  Execute
 	Metadata CommandMetadata `json:"metadata"`
 }
 
 type CommandMetadata struct {
-	Version       int64
-	ExecutionDate *time.Time
-	ApplicationID string
-	AccountID     string
-	UserID        string
+	Version       int64      `json:"version"`
+	ExecutionDate *time.Time `json:"executionDate"`
+	ApplicationID string     `json:"applicationId"`
+	AccountID     string     `json:"accountId"`
+	UserID        string     `json:"userId"`
 }
 
 type Dispatcher interface {
