@@ -1,0 +1,4 @@
+WeOS Framework
+Copyright 2021 Wepala Limited
+
+This product includes software developed at Wepala Limited (https://wepala.com)
