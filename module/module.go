@@ -23,6 +23,7 @@ type WeOSModule interface {
 	AddProjection(projection persistence.Projection) error
 	GetProjections() []persistence.Projection
 	Migrate(ctx context.Context) error
+	GetConfig() *WeOSModuleConfig
 }
 
 //Module is the core of the WeOS framework. It has a config, command handler and basic metadata as a default.
@@ -35,8 +36,17 @@ type WeOSMod struct {
 	logger            weos.Log
 	db                *sql.DB
 	HttpClient        *http.Client
+	config            *WeOSModuleConfig
 	projections       []persistence.Projection
 	AccountURL        string `json:"accountURL"`
+}
+
+func (w *WeOSMod) Logger() weos.Log {
+	return w.logger
+}
+
+func (w *WeOSMod) GetConfig() *WeOSModuleConfig {
+	return w.config
 }
 
 func (w *WeOSMod) GetModuleID() string {
@@ -187,6 +197,7 @@ var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger weos.Log, d
 		commandDispatcher: &DefaultDispatcher{},
 		logger:            logger,
 		db:                db,
+		config:            config,
 		AccountURL:        config.AccountURL,
 		HttpClient: &http.Client{
 			Timeout: time.Second * 10,
