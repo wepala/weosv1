@@ -1,29 +1,27 @@
-package module_test
+package weos_test
 
 import (
 	"context"
 	"database/sql"
 	_ "github.com/proullon/ramsql/driver"
-	"github.com/wepala/weos/domain"
-	"github.com/wepala/weos/module"
-	"github.com/wepala/weos/persistence"
+	"github.com/wepala/weos"
 	"os"
 	"testing"
 )
 
 func TestNewApplicationFromConfig(t *testing.T) {
-	config := &module.WeOSModuleConfig{
+	config := &weos.WeOSModuleConfig{
 		ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 		Title:     "Test Module",
 		AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-		Database: &module.WeOSDBConfig{
+		Database: &weos.WeOSDBConfig{
 			Host:     "localhost",
 			User:     "root",
 			Password: "password",
 			Port:     5432,
 			Database: "test",
 		},
-		Log: &module.WeOSLogConfig{
+		Log: &weos.WeOSLogConfig{
 			Level:        "debug",
 			ReportCaller: false,
 			Formatter:    "text",
@@ -31,7 +29,7 @@ func TestNewApplicationFromConfig(t *testing.T) {
 	}
 
 	t.Run("basic module from config", func(t *testing.T) {
-		app, err := module.NewApplicationFromConfig(config, nil, nil)
+		app, err := weos.NewApplicationFromConfig(config, nil, nil)
 		if err != nil {
 			t.Fatalf("error encountered setting up app")
 		}
@@ -49,12 +47,12 @@ func TestNewApplicationFromConfig(t *testing.T) {
 	})
 
 	t.Run("override logger", func(t *testing.T) {
-		logger := &Ext1FieldLoggerMock{
+		logger := &LogMock{
 			DebugFunc: func(args ...interface{}) {
 
 			},
 		}
-		app, err := module.NewApplicationFromConfig(config, logger, nil)
+		app, err := weos.NewApplicationFromConfig(config, logger, nil)
 		if err != nil {
 			t.Fatalf("error encountered setting up app")
 		}
@@ -71,7 +69,7 @@ func TestNewApplicationFromConfig(t *testing.T) {
 		}
 		defer db.Close()
 
-		app, err := module.NewApplicationFromConfig(config, nil, db)
+		app, err := weos.NewApplicationFromConfig(config, nil, db)
 		if err != nil {
 			t.Fatalf("error encountered setting up app")
 		}
@@ -83,22 +81,22 @@ func TestNewApplicationFromConfig(t *testing.T) {
 
 func TestNewApplicationFromConfig_SQLite(t *testing.T) {
 	t.Run("test setting up basic sqlite connection", func(t *testing.T) {
-		sqliteConfig := &module.WeOSModuleConfig{
+		sqliteConfig := &weos.WeOSModuleConfig{
 			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 			Title:     "Test Module",
 			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-			Database: &module.WeOSDBConfig{
+			Database: &weos.WeOSDBConfig{
 				Driver:   "sqlite3",
 				Database: "test.db",
 			},
-			Log: &module.WeOSLogConfig{
+			Log: &weos.WeOSLogConfig{
 				Level:        "debug",
 				ReportCaller: false,
 				Formatter:    "text",
 			},
 		}
 
-		app, err := module.NewApplicationFromConfig(sqliteConfig, nil, nil)
+		app, err := weos.NewApplicationFromConfig(sqliteConfig, nil, nil)
 		if err != nil {
 			t.Fatalf("error encountered setting up app '%s'", err)
 		}
@@ -115,22 +113,22 @@ func TestNewApplicationFromConfig_SQLite(t *testing.T) {
 	})
 
 	t.Run("test setting up sqlite connection in memory named database", func(t *testing.T) {
-		sqliteConfig := &module.WeOSModuleConfig{
+		sqliteConfig := &weos.WeOSModuleConfig{
 			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 			Title:     "Test Module",
 			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-			Database: &module.WeOSDBConfig{
+			Database: &weos.WeOSDBConfig{
 				Driver:   "sqlite3",
 				Database: ":memory:",
 			},
-			Log: &module.WeOSLogConfig{
+			Log: &weos.WeOSLogConfig{
 				Level:        "debug",
 				ReportCaller: false,
 				Formatter:    "text",
 			},
 		}
 
-		app, err := module.NewApplicationFromConfig(sqliteConfig, nil, nil)
+		app, err := weos.NewApplicationFromConfig(sqliteConfig, nil, nil)
 		if err != nil {
 			t.Fatalf("error encountered setting up app '%s'", err)
 		}
@@ -150,24 +148,24 @@ func TestNewApplicationFromConfig_SQLite(t *testing.T) {
 	})
 
 	t.Run("test setting up sqlite connection with authentication", func(t *testing.T) {
-		sqliteConfig := &module.WeOSModuleConfig{
+		sqliteConfig := &weos.WeOSModuleConfig{
 			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 			Title:     "Test Module",
 			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-			Database: &module.WeOSDBConfig{
+			Database: &weos.WeOSDBConfig{
 				Driver:   "sqlite3",
 				Database: ":memory:",
 				User:     "test",
 				Password: "pass",
 			},
-			Log: &module.WeOSLogConfig{
+			Log: &weos.WeOSLogConfig{
 				Level:        "debug",
 				ReportCaller: false,
 				Formatter:    "text",
 			},
 		}
 
-		app, err := module.NewApplicationFromConfig(sqliteConfig, nil, nil)
+		app, err := weos.NewApplicationFromConfig(sqliteConfig, nil, nil)
 		if err != nil {
 			t.Fatalf("error encountered setting up app '%s'", err)
 		}
@@ -180,26 +178,26 @@ func TestNewApplicationFromConfig_SQLite(t *testing.T) {
 }
 
 func TestWeOSApp_AddProjection(t *testing.T) {
-	config := &module.WeOSModuleConfig{
+	config := &weos.WeOSModuleConfig{
 		ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 		Title:     "Test Module",
 		AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-		Database: &module.WeOSDBConfig{
+		Database: &weos.WeOSDBConfig{
 			Host:     "localhost",
 			User:     "root",
 			Password: "password",
 			Port:     5432,
 			Database: "test",
 		},
-		Log: &module.WeOSLogConfig{
+		Log: &weos.WeOSLogConfig{
 			Level:        "debug",
 			ReportCaller: false,
 			Formatter:    "text",
 		},
 	}
 	mockProjection := &ProjectionMock{
-		GetEventHandlerFunc: func() persistence.EventHandler {
-			return func(event domain.Event) {
+		GetEventHandlerFunc: func() weos.EventHandler {
+			return func(event weos.Event) {
 
 			}
 		},
@@ -207,7 +205,7 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 			return nil
 		},
 	}
-	app, err := module.NewApplicationFromConfig(config, nil, nil)
+	app, err := weos.NewApplicationFromConfig(config, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error occured setting up module '%s'", err)
 	}

@@ -1,7 +1,6 @@
-package persistence
+package weos
 
 import (
-	"github.com/wepala/weos/domain"
 	"sync"
 )
 
@@ -11,7 +10,7 @@ type EventDisptacher struct {
 	dispatch        sync.Mutex
 }
 
-func (e *EventDisptacher) Dispatch(event domain.Event) {
+func (e *EventDisptacher) Dispatch(event Event) {
 	//mutex helps keep state between routines
 	e.dispatch.Lock()
 	defer e.dispatch.Unlock()
@@ -41,4 +40,4 @@ func (e *EventDisptacher) GetSubscribers() []EventHandler {
 	return e.handlers
 }
 
-type EventHandler func(event domain.Event)
+type EventHandler func(event Event)

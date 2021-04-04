@@ -1,9 +1,8 @@
-package domain
+package weos
 
 import (
 	"encoding/json"
 	"github.com/segmentio/ksuid"
-	"github.com/wepala/weos/errors"
 	"time"
 )
 
@@ -19,7 +18,7 @@ type Event struct {
 var NewBasicEvent = func(eventType string, entityID string, entityType string, payload interface{}) (*Event, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, errors.NewDomainError("Unable to marshal event payload", eventType, entityID, err)
+		return nil, NewDomainError("Unable to marshal event payload", eventType, entityID, err)
 	}
 	return &Event{
 		ID:      ksuid.New().String(),
@@ -37,7 +36,7 @@ var NewBasicEvent = func(eventType string, entityID string, entityType string, p
 var NewVersionEvent = func(eventType string, entityID string, payload interface{}, version int) (*Event, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, errors.NewDomainError("Unable to marshal event payload", eventType, entityID, err)
+		return nil, NewDomainError("Unable to marshal event payload", eventType, entityID, err)
 	}
 	return &Event{
 		ID:      ksuid.New().String(),
@@ -64,27 +63,27 @@ type EventMeta struct {
 
 func (e *Event) IsValid() bool {
 	if e.ID == "" {
-		e.AddError(errors.NewDomainError("all events must have an id", "Event", e.Meta.EntityID, nil))
+		e.AddError(NewDomainError("all events must have an id", "Event", e.Meta.EntityID, nil))
 		return false
 	}
 
 	if e.Meta.EntityID == "" {
-		e.AddError(errors.NewDomainError("all domain events must be associated with an entity", "Event", e.Meta.EntityID, nil))
+		e.AddError(NewDomainError("all domain events must be associated with an entity", "Event", e.Meta.EntityID, nil))
 		return false
 	}
 
 	if e.Version == 0 {
-		e.AddError(errors.NewDomainError("all domain events must have a version no.", "Event", e.Meta.EntityID, nil))
+		e.AddError(NewDomainError("all domain events must have a version no.", "Event", e.Meta.EntityID, nil))
 		return false
 	}
 
 	if e.Type == "" {
-		e.AddError(errors.NewDomainError("all domain events must have a type", "Event", e.Meta.EntityID, nil))
+		e.AddError(NewDomainError("all domain events must have a type", "Event", e.Meta.EntityID, nil))
 		return false
 	}
 
 	if e.Meta.EntityType == "" {
-		e.AddError(errors.NewDomainError("all domain events must have an entity type", "Event", e.Meta.EntityID, nil))
+		e.AddError(NewDomainError("all domain events must have an entity type", "Event", e.Meta.EntityID, nil))
 		return false
 	}
 

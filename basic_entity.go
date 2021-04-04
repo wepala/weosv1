@@ -1,4 +1,4 @@
-package domain
+package weos
 
 type BasicEntity struct {
 	entityErrors []error

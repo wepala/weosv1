@@ -1,29 +1,28 @@
-package persistence_test
+package weos_test
 
 import (
-	"github.com/wepala/weos/domain"
-	"github.com/wepala/weos/persistence"
+	"github.com/wepala/weos"
 	"testing"
 )
 
 func TestEventDisptacher_Dispatch(t *testing.T) {
-	mockEvent := &domain.Event{
+	mockEvent := &weos.Event{
 		Type:    "TEST_EVENT",
 		Payload: nil,
-		Meta: domain.EventMeta{
+		Meta: weos.EventMeta{
 			EntityID: "some id",
 			Module:   "applicationID",
 			Account:  "accountID",
 		},
 		Version: 1,
 	}
-	dispatcher := &persistence.EventDisptacher{}
+	dispatcher := &weos.EventDisptacher{}
 	handlersCalled := 0
-	dispatcher.AddSubscriber(func(event domain.Event) {
+	dispatcher.AddSubscriber(func(event weos.Event) {
 		handlersCalled += 1
 	})
 
-	dispatcher.AddSubscriber(func(event domain.Event) {
+	dispatcher.AddSubscriber(func(event weos.Event) {
 		handlersCalled += 1
 		if event.Type != mockEvent.Type {
 			t.Errorf("expected the type to be '%s', got '%s'", mockEvent.Type, event.Type)

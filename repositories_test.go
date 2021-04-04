@@ -1,4 +1,4 @@
-package persistence_test
+package weos_test
 
 import (
 	"context"
@@ -7,8 +7,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
 	log "github.com/sirupsen/logrus"
-	"github.com/wepala/weos/domain"
-	"github.com/wepala/weos/persistence"
+	"github.com/wepala/weos"
 	"os"
 	"testing"
 )
@@ -61,20 +60,20 @@ func TestMain(m *testing.M) {
 }
 
 func TestEventRepositoryGorm_Persist(t *testing.T) {
-	eventRepository, err := persistence.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "accountID", "applicationID", "user id", "group id")
+	eventRepository, err := weos.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "accountID", "applicationID", "user id", "group id")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.(*persistence.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
 
-	mockEvent := &domain.Event{
+	mockEvent := &weos.Event{
 		ID:      "some event id",
 		Type:    "TEST_EVENT",
 		Payload: nil,
-		Meta: domain.EventMeta{
+		Meta: weos.EventMeta{
 			EntityID:   "some id",
 			EntityType: "SomeType",
 			SequenceNo: 0,
@@ -84,11 +83,11 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 
 	//add an event handler
 	eventHandlerCalled := 0
-	eventRepository.AddSubscriber(func(event domain.Event) {
+	eventRepository.AddSubscriber(func(event weos.Event) {
 		eventHandlerCalled += 1
 	})
 
-	err = eventRepository.Persist([]domain.Entity{mockEvent})
+	err = eventRepository.Persist([]weos.Entity{mockEvent})
 	if err != nil {
 		t.Fatalf("error encountered persisting event '%s'", err)
 	}
@@ -128,29 +127,29 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
-	eventRepository, err := persistence.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	eventRepository, err := weos.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.(*persistence.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
-	mockEvent, _ := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
+	mockEvent, _ := weos.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"})
 
-	mockEvent2, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
+	mockEvent2, _ := weos.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
-	mockEvent3, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
+	mockEvent3, _ := weos.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
 
-	err = eventRepository.Persist([]domain.Entity{mockEvent, mockEvent2, mockEvent3})
+	err = eventRepository.Persist([]weos.Entity{mockEvent, mockEvent2, mockEvent3})
 	if err != nil {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
@@ -171,29 +170,29 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
-	eventRepository, err := persistence.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	eventRepository, err := weos.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.(*persistence.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
-	mockEvent, _ := domain.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+	mockEvent, _ := weos.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"})
 
-	mockEvent2, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+	mockEvent2, _ := weos.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
-	mockEvent3, _ := domain.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+	mockEvent3, _ := weos.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
 
-	err = eventRepository.Persist([]domain.Entity{mockEvent, mockEvent2, mockEvent3})
+	err = eventRepository.Persist([]weos.Entity{mockEvent, mockEvent2, mockEvent3})
 	if err != nil {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
@@ -215,17 +214,17 @@ func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
 
 func TestSaveAggregateEvents(t *testing.T) {
 	type BaseAggregate struct {
-		domain.AggregateRoot
+		weos.AggregateRoot
 		Title string `json:"title"`
 	}
 
 	baseAggregate := &BaseAggregate{}
 
-	eventRepository, err := persistence.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	eventRepository, err := weos.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
 	if err != nil {
 		t.Fatalf("error encountered creating event repository '%s'", err)
 	}
-	err = eventRepository.(*persistence.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate()
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}

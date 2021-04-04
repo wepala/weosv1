@@ -1,12 +1,12 @@
-package domain_test
+package weos_test
 
 import (
-	"github.com/wepala/weos/domain"
+	"github.com/wepala/weos"
 	"testing"
 )
 
 func TestNewBasicEvent(t *testing.T) {
-	event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
+	event, _ := weos.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
 	if event.Type != "TEST_EVENT" {
 		t.Errorf("expected event to be type '%s', got '%s'", "TEST_EVENT", event.Type)
 	}
@@ -22,14 +22,14 @@ func TestNewBasicEvent(t *testing.T) {
 
 func TestEvent_IsValid(t *testing.T) {
 	t.Run("valid event", func(t *testing.T) {
-		event, _ := domain.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
+		event, _ := weos.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
 		if !event.IsValid() {
 			t.Errorf("expected the event to be valid")
 		}
 	})
 
 	t.Run("no entity id, event invalid", func(t *testing.T) {
-		event, _ := domain.NewBasicEvent("TEST_EVENT", "", "BaseAggregate", nil)
+		event, _ := weos.NewBasicEvent("TEST_EVENT", "", "BaseAggregate", nil)
 		if event.IsValid() {
 			t.Fatalf("expected the event to be invalid")
 		}
@@ -40,11 +40,11 @@ func TestEvent_IsValid(t *testing.T) {
 	})
 
 	t.Run("no event id, event invalid", func(t *testing.T) {
-		event := domain.Event{
+		event := weos.Event{
 			ID:      "",
 			Type:    "Some Type",
 			Payload: nil,
-			Meta: domain.EventMeta{
+			Meta: weos.EventMeta{
 				EntityID: "1iNqlx5htN0oJ3viyfWkAofJX7k",
 			},
 			Version: 1,
@@ -59,11 +59,11 @@ func TestEvent_IsValid(t *testing.T) {
 	})
 
 	t.Run("no version no, event invalid", func(t *testing.T) {
-		event := domain.Event{
+		event := weos.Event{
 			ID:      "adfasdf",
 			Type:    "Some Type",
 			Payload: nil,
-			Meta: domain.EventMeta{
+			Meta: weos.EventMeta{
 				EntityID: "1iNqlx5htN0oJ3viyfWkAofJX7k",
 			},
 			Version: 0,
@@ -78,11 +78,11 @@ func TestEvent_IsValid(t *testing.T) {
 	})
 
 	t.Run("no type, event invalid", func(t *testing.T) {
-		event := domain.Event{
+		event := weos.Event{
 			ID:      "adfasdf",
 			Type:    "",
 			Payload: nil,
-			Meta: domain.EventMeta{
+			Meta: weos.EventMeta{
 				EntityID: "1iNqlx5htN0oJ3viyfWkAofJX7k",
 			},
 			Version: 1,

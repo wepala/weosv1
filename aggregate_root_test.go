@@ -1,24 +1,24 @@
-package domain_test
+package weos_test
 
 import (
-	"github.com/wepala/weos/domain"
+	"github.com/wepala/weos"
 	"testing"
 )
 
 func TestAggregateRoot_DefaultReducer(t *testing.T) {
 	type BaseAggregate struct {
-		domain.AggregateRoot
+		weos.AggregateRoot
 		Title string `json:"title"`
 	}
 
-	mockEvent, err := domain.NewBasicEvent("Event", "", "BaseAggregate", &struct {
+	mockEvent, err := weos.NewBasicEvent("Event", "", "BaseAggregate", &struct {
 		Title string `json:"title"`
 	}{Title: "Test"})
 	if err != nil {
 		t.Fatalf("error creating mock event '%s'", err)
 	}
 	baseAggregate := &BaseAggregate{}
-	baseAggregate = domain.DefaultReducer(baseAggregate, mockEvent, nil).(*BaseAggregate)
+	baseAggregate = weos.DefaultReducer(baseAggregate, mockEvent, nil).(*BaseAggregate)
 	if baseAggregate.Title != "Test" {
 		t.Errorf("expected aggregate title to be '%s', got '%s'", "Test", baseAggregate.Title)
 	}
@@ -26,18 +26,18 @@ func TestAggregateRoot_DefaultReducer(t *testing.T) {
 
 func TestAggregateRoot_NewAggregateFromEvents(t *testing.T) {
 	type BaseAggregate struct {
-		domain.AggregateRoot
+		weos.AggregateRoot
 		Title string `json:"title"`
 	}
 
-	mockEvent, err := domain.NewBasicEvent("Event", "", "BaseAggregate", &struct {
+	mockEvent, err := weos.NewBasicEvent("Event", "", "BaseAggregate", &struct {
 		Title string `json:"title"`
 	}{Title: "Test"})
 	if err != nil {
 		t.Fatalf("error creating mock event '%s'", err)
 	}
 	baseAggregate := &BaseAggregate{}
-	baseAggregate = domain.NewAggregateFromEvents(baseAggregate, []*domain.Event{mockEvent}).(*BaseAggregate)
+	baseAggregate = weos.NewAggregateFromEvents(baseAggregate, []*weos.Event{mockEvent}).(*BaseAggregate)
 	if baseAggregate.Title != "Test" {
 		t.Errorf("expected aggregate title to be '%s', got '%s'", "Test", baseAggregate.Title)
 	}

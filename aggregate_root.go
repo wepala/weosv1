@@ -1,8 +1,7 @@
-package domain
+package weos
 
 import (
 	"encoding/json"
-	"github.com/wepala/weos/errors"
 )
 
 //AggregateRoot Is a base struct for WeOS applications to use. This is event sourcing ready by default
@@ -11,23 +10,14 @@ type AggregateRoot struct {
 	SequenceNo int64
 	newEvents  []Entity
 	User       User
-	Account    Account
 }
 
 func (w *AggregateRoot) GetUser() User {
 	return w.User
 }
 
-func (w *AggregateRoot) GetAccount() Account {
-	return w.Account
-}
-
 func (w *AggregateRoot) SetUser(user User) {
 	w.User = user
-}
-
-func (w *AggregateRoot) SetAccount(account Account) {
-	w.Account = account
 }
 
 func (w *AggregateRoot) NewChange(event *Event) {
@@ -44,11 +34,11 @@ var DefaultReducer = func(initialState Entity, event *Event, next Reducer) Entit
 	//convert event to json string
 	eventString, err := json.Marshal(event.Payload)
 	if err != nil {
-		initialState.AddError(errors.NewDomainError("error marshalling event", "", initialState.GetID(), err))
+		initialState.AddError(NewDomainError("error marshalling event", "", initialState.GetID(), err))
 	} else {
 		err := json.Unmarshal(eventString, &initialState)
 		if err != nil {
-			initialState.AddError(errors.NewDomainError("error unmarshalling event into entity", "", initialState.GetID(), err))
+			initialState.AddError(NewDomainError("error unmarshalling event into entity", "", initialState.GetID(), err))
 		}
 	}
 	//if it's an aggregate root then let's set the user and account based on the event meta details
@@ -56,11 +46,6 @@ var DefaultReducer = func(initialState Entity, event *Event, next Reducer) Entit
 		aggregateRoot.SetUser(User{
 			BasicEntity{
 				ID: event.Meta.User,
-			},
-		})
-		aggregateRoot.SetAccount(Account{
-			BasicEntity{
-				ID: event.Meta.Account,
 			},
 		})
 	}

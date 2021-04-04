@@ -1,4 +1,6 @@
-package module
+package weos
+
+//go:generate moq -out mocks_test.go -pkg weos_test . EventRepository Projection Log Dispatcher
 
 import (
 	"context"
@@ -7,9 +9,6 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
-	"github.com/wepala/weos"
-	"github.com/wepala/weos/errors"
-	"github.com/wepala/weos/persistence"
 	"net/http"
 	"os"
 	"strconv"
@@ -22,9 +21,9 @@ type WeOSModule interface {
 	GetTitle() string
 	GetAccountID() string
 	GetDBConnection() *sql.DB
-	Logger() weos.Log
-	AddProjection(projection persistence.Projection) error
-	GetProjections() []persistence.Projection
+	Logger() Log
+	AddProjection(projection Projection) error
+	GetProjections() []Projection
 	Migrate(ctx context.Context) error
 	GetConfig() *WeOSModuleConfig
 }
@@ -36,15 +35,15 @@ type WeOSMod struct {
 	Title             string `json:"title"`
 	AccountID         string `json:"accountId"`
 	commandDispatcher Dispatcher
-	logger            weos.Log
+	logger            Log
 	db                *sql.DB
 	HttpClient        *http.Client
 	config            *WeOSModuleConfig
-	projections       []persistence.Projection
+	projections       []Projection
 	AccountURL        string `json:"accountURL"`
 }
 
-func (w *WeOSMod) Logger() weos.Log {
+func (w *WeOSMod) Logger() Log {
 	return w.logger
 }
 
@@ -68,16 +67,16 @@ func (w *WeOSMod) GetDBConnection() *sql.DB {
 	return w.db
 }
 
-func (w *WeOSMod) GetLogger() weos.Log {
+func (w *WeOSMod) GetLogger() Log {
 	return w.logger
 }
 
-func (w *WeOSMod) AddProjection(projection persistence.Projection) error {
+func (w *WeOSMod) AddProjection(projection Projection) error {
 	w.projections = append(w.projections, projection)
 	return nil
 }
 
-func (w *WeOSMod) GetProjections() []persistence.Projection {
+func (w *WeOSMod) GetProjections() []Projection {
 	return w.projections
 }
 
@@ -138,7 +137,7 @@ type WeOSLogConfig struct {
 //	}
 //}
 
-var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger weos.Log, db *sql.DB) (*WeOSMod, error) {
+var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger Log, db *sql.DB) (*WeOSMod, error) {
 
 	var err error
 
@@ -194,7 +193,7 @@ var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger weos.Log, d
 				if _, err = os.Stat(config.Database.Database); os.IsNotExist(err) {
 					_, err = os.Create(strings.Replace(config.Database.Database, ":memory:", "", -1))
 					if err != nil {
-						return nil, errors.NewError(fmt.Sprintf("error creating sqlite database '%s'", config.Database.Database), err)
+						return nil, NewError(fmt.Sprintf("error creating sqlite database '%s'", config.Database.Database), err)
 					}
 				}
 			}
@@ -215,7 +214,7 @@ var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger weos.Log, d
 
 		db, err = sql.Open(config.Database.Driver, connStr)
 		if err != nil {
-			return nil, errors.NewError("error setting up connection to database", err)
+			return nil, NewError("error setting up connection to database", err)
 		}
 
 		db.SetMaxOpenConns(config.Database.MaxOpen)
@@ -226,7 +225,7 @@ var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger weos.Log, d
 		ModuleID:          config.ModuleID,
 		Title:             config.Title,
 		AccountID:         config.AccountID,
-		commandDispatcher: &DefaultDispatcher{},
+		commandDispatcher: &DefaultCommandDispatcher{},
 		logger:            logger,
 		db:                db,
 		config:            config,

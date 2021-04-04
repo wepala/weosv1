@@ -1,12 +1,10 @@
-package persistence
+package weos
 
 import (
 	"context"
 	"database/sql"
 	"encoding/json"
 	"github.com/segmentio/ksuid"
-	"github.com/wepala/weos"
-	"github.com/wepala/weos/domain"
 	"gorm.io/datatypes"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -16,7 +14,7 @@ type EventRepositoryGorm struct {
 	DB              *gorm.DB
 	gormDB          *gorm.DB
 	eventDispatcher EventDisptacher
-	logger          weos.Log
+	logger          Log
 	ctx             context.Context
 	unitOfWork      bool
 	AccountID       string
@@ -39,7 +37,7 @@ type GormEvent struct {
 }
 
 //NewGormEvent converts a domain event to something that is a bit easier for Gorm to work with
-func NewGormEvent(event *domain.Event) (GormEvent, error) {
+func NewGormEvent(event *Event) (GormEvent, error) {
 	payload, err := json.Marshal(event.Payload)
 	if err != nil {
 		return GormEvent{}, err
@@ -58,7 +56,7 @@ func NewGormEvent(event *domain.Event) (GormEvent, error) {
 	}, nil
 }
 
-func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
+func (e *EventRepositoryGorm) Persist(entities []Entity) error {
 	//TODO use the information in the context to get account info, module info.
 	if len(entities) == 0 {
 		return nil
@@ -71,7 +69,7 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 	}
 
 	for _, entity := range entities {
-		event := entity.(*domain.Event)
+		event := entity.(*Event)
 		//let's fill in meta data if it's not already in the object
 		if event.Meta.User == "" {
 			event.Meta.User = e.UserID
@@ -109,26 +107,26 @@ func (e *EventRepositoryGorm) Persist(entities []domain.Entity) error {
 	}
 
 	for _, entity := range entities {
-		e.eventDispatcher.Dispatch(*entity.(*domain.Event))
+		e.eventDispatcher.Dispatch(*entity.(*Event))
 	}
 	return nil
 }
 
-func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*domain.Event, error) {
+func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*Event, error) {
 	var events []GormEvent
 	result := e.DB.Order("sequence_no asc").Where("entity_id = ?", ID).Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
-	var tevents []*domain.Event
+	var tevents []*Event
 
 	for _, event := range events {
-		tevents = append(tevents, &domain.Event{
+		tevents = append(tevents, &Event{
 			ID:      event.ID,
 			Type:    event.Type,
 			Payload: json.RawMessage(event.Payload),
-			Meta: domain.EventMeta{
+			Meta: EventMeta{
 				EntityID:   event.EntityID,
 				EntityType: event.EntityType,
 				Account:    event.AccountID,
@@ -142,21 +140,21 @@ func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*domain.Event, error)
 	return tevents, nil
 }
 
-func (e *EventRepositoryGorm) GetByAggregateAndType(ID string, entityType string) ([]*domain.Event, error) {
+func (e *EventRepositoryGorm) GetByAggregateAndType(ID string, entityType string) ([]*Event, error) {
 	var events []GormEvent
 	result := e.DB.Order("sequence_no asc").Where("entity_id = ? AND entity_type = ?", ID, entityType).Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
-	var tevents []*domain.Event
+	var tevents []*Event
 
 	for _, event := range events {
-		tevents = append(tevents, &domain.Event{
+		tevents = append(tevents, &Event{
 			ID:      event.ID,
 			Type:    event.Type,
 			Payload: json.RawMessage(event.Payload),
-			Meta: domain.EventMeta{
+			Meta: EventMeta{
 				EntityID:   event.EntityID,
 				EntityType: event.EntityType,
 				Account:    event.AccountID,
@@ -170,20 +168,20 @@ func (e *EventRepositoryGorm) GetByAggregateAndType(ID string, entityType string
 	return tevents, nil
 }
 
-func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*domain.Event, error) {
+func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error) {
 	var events []GormEvent
 	result := e.DB.Order("sequence_no asc").Where("entity_id = ? AND sequence_no >=? AND sequence_no <= ?", ID, start, end).Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	var tevents []*domain.Event
+	var tevents []*Event
 
 	for _, event := range events {
-		tevents = append(tevents, &domain.Event{
+		tevents = append(tevents, &Event{
 			ID:      event.ID,
 			Type:    event.Type,
 			Payload: json.RawMessage(event.Payload),
-			Meta: domain.EventMeta{
+			Meta: EventMeta{
 				EntityID:   event.EntityID,
 				EntityType: event.EntityType,
 				Account:    event.AccountID,
@@ -206,7 +204,7 @@ func (e *EventRepositoryGorm) GetSubscribers() ([]EventHandler, error) {
 }
 
 func (e *EventRepositoryGorm) Migrate() error {
-	event, err := NewGormEvent(&domain.Event{})
+	event, err := NewGormEvent(&Event{})
 	if err != nil {
 		return err
 	}
@@ -224,13 +222,13 @@ func (e *EventRepositoryGorm) Flush() error {
 	return err
 }
 
-func (e *EventRepositoryGorm) Remove(entities []domain.Entity) error {
+func (e *EventRepositoryGorm) Remove(entities []Entity) error {
 
 	savePointID := "s" + ksuid.New().String() //NOTE the save point can't start with a number
 	e.logger.Infof("persisting %d events with save point %s", len(entities), savePointID)
 	e.DB.SavePoint(savePointID)
 	for _, event := range entities {
-		gormEvent, err := NewGormEvent(event.(*domain.Event))
+		gormEvent, err := NewGormEvent(event.(*Event))
 		if err != nil {
 			return err
 		}
@@ -244,7 +242,7 @@ func (e *EventRepositoryGorm) Remove(entities []domain.Entity) error {
 	return nil
 }
 
-var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger weos.Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
+var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: db,
 	}), config)
@@ -258,7 +256,7 @@ var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOf
 	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
 }
 
-var NewBasicEventRepository = func(db *sql.DB, logger weos.Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
+var NewBasicEventRepository = func(db *sql.DB, logger Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: db,
 	}), nil)
