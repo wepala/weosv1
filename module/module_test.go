@@ -7,6 +7,7 @@ import (
 	"github.com/wepala/weos/domain"
 	"github.com/wepala/weos/module"
 	"github.com/wepala/weos/persistence"
+	"os"
 	"testing"
 )
 
@@ -77,6 +78,104 @@ func TestNewApplicationFromConfig(t *testing.T) {
 		if app.GetDBConnection().Ping() != nil {
 			t.Errorf("didn't expect errors pinging the database")
 		}
+	})
+}
+
+func TestNewApplicationFromConfig_SQLite(t *testing.T) {
+	t.Run("test setting up basic sqlite connection", func(t *testing.T) {
+		sqliteConfig := &module.WeOSModuleConfig{
+			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
+			Title:     "Test Module",
+			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
+			Database: &module.WeOSDBConfig{
+				Driver:   "sqlite3",
+				Database: "test.db",
+			},
+			Log: &module.WeOSLogConfig{
+				Level:        "debug",
+				ReportCaller: false,
+				Formatter:    "text",
+			},
+		}
+
+		app, err := module.NewApplicationFromConfig(sqliteConfig, nil, nil)
+		if err != nil {
+			t.Fatalf("error encountered setting up app '%s'", err)
+		}
+
+		if app.GetDBConnection().Ping() != nil {
+			t.Errorf("didn't expect errors pinging the database")
+		}
+
+		//cleanup file after test
+		err = os.Remove(sqliteConfig.Database.Database)
+		if err != nil {
+			t.Fatalf("error cleaning up '%s'", err)
+		}
+	})
+
+	t.Run("test setting up sqlite connection in memory named database", func(t *testing.T) {
+		sqliteConfig := &module.WeOSModuleConfig{
+			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
+			Title:     "Test Module",
+			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
+			Database: &module.WeOSDBConfig{
+				Driver:   "sqlite3",
+				Database: ":memory:",
+			},
+			Log: &module.WeOSLogConfig{
+				Level:        "debug",
+				ReportCaller: false,
+				Formatter:    "text",
+			},
+		}
+
+		app, err := module.NewApplicationFromConfig(sqliteConfig, nil, nil)
+		if err != nil {
+			t.Fatalf("error encountered setting up app '%s'", err)
+		}
+
+		if app.GetDBConnection().Ping() != nil {
+			t.Errorf("didn't expect errors pinging the database")
+		}
+
+		if _, err = os.Stat(sqliteConfig.Database.Database); err == nil {
+			t.Errorf("database was not created in memory")
+			//cleanup file
+			err = os.Remove(sqliteConfig.Database.Database)
+			if err != nil {
+				t.Fatalf("error cleaning up '%s'", err)
+			}
+		}
+	})
+
+	t.Run("test setting up sqlite connection with authentication", func(t *testing.T) {
+		sqliteConfig := &module.WeOSModuleConfig{
+			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
+			Title:     "Test Module",
+			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
+			Database: &module.WeOSDBConfig{
+				Driver:   "sqlite3",
+				Database: ":memory:",
+				User:     "test",
+				Password: "pass",
+			},
+			Log: &module.WeOSLogConfig{
+				Level:        "debug",
+				ReportCaller: false,
+				Formatter:    "text",
+			},
+		}
+
+		app, err := module.NewApplicationFromConfig(sqliteConfig, nil, nil)
+		if err != nil {
+			t.Fatalf("error encountered setting up app '%s'", err)
+		}
+
+		if app.GetDBConnection().Ping() != nil {
+			t.Errorf("didn't expect errors pinging the database")
+		}
+
 	})
 }
 

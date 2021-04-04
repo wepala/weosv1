@@ -5,12 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos"
 	"github.com/wepala/weos/errors"
 	"github.com/wepala/weos/persistence"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -177,15 +180,44 @@ var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger weos.Log, d
 	}
 
 	if db == nil && config.Database != nil {
-		connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.User, config.Database.Password, config.Database.Database)
+		var connStr string
+
 		if config.Database.Driver == "" {
 			config.Database.Driver = "postgres"
 		}
+
+		switch config.Database.Driver {
+		case "sqlite3":
+			//check if file exists and if not create it. We only do this if a memory only db is NOT asked for
+			//(Note that if it's a combination we go ahead and create the file) https://www.sqlite.org/inmemorydb.html
+			if config.Database.Database != ":memory:" {
+				if _, err = os.Stat(config.Database.Database); os.IsNotExist(err) {
+					_, err = os.Create(strings.Replace(config.Database.Database, ":memory:", "", -1))
+					if err != nil {
+						return nil, errors.NewError(fmt.Sprintf("error creating sqlite database '%s'", config.Database.Database), err)
+					}
+				}
+			}
+
+			connStr = fmt.Sprintf("%s",
+				config.Database.Database)
+
+			//update connection string to include authentication IF a username is set
+			if config.Database.User != "" {
+				authEnticationString := fmt.Sprintf("?_auth&_auth_user=%s&_auth_pass=%s&_auth_crypt=sha512",
+					config.Database.User, config.Database.Password)
+				connStr = connStr + authEnticationString
+			}
+		default:
+			connStr = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+				config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.User, config.Database.Password, config.Database.Database)
+		}
+
 		db, err = sql.Open(config.Database.Driver, connStr)
 		if err != nil {
 			return nil, errors.NewError("error setting up connection to database", err)
 		}
+
 		db.SetMaxOpenConns(config.Database.MaxOpen)
 		db.SetMaxIdleConns(config.Database.MaxIdle)
 	}
