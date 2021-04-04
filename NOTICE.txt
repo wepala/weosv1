@@ -2,3 +2,7 @@ WeOS Framework
 Copyright 2021 Wepala Limited
 
 This product includes software developed at Wepala Limited (https://wepala.com)
+
+The Initial Developer of some parts of the framework, which are copied from, derived from, or
+inspired by GORM, is Jinzhu (wosmvp@gmail.com).
+Copyright (c) 2013-NOW  Jinzhu <wosmvp@gmail.com>
