@@ -16,71 +16,94 @@ import (
 	"time"
 )
 
-type WeOSModule interface {
-	GetModuleID() string
-	GetTitle() string
-	GetAccountID() string
-	GetDBConnection() *sql.DB
+type ApplicationConfig struct {
+	ModuleID    string     `json:"moduleId"`
+	Title       string     `json:"title"`
+	AccountID   string     `json:"accountId"`
+	AccountName string     `json:"accountName"`
+	Database    *DBConfig  `json:"database"`
+	Log         *LogConfig `json:"log"`
+	BaseURL     string     `json:"baseURL"`
+	LoginURL    string     `json:"loginURL"`
+	GraphQLURL  string     `json:"graphQLURL"`
+	SessionKey  string     `json:"sessionKey"`
+	Secret      string     `json:"secret"`
+	AccountURL  string     `json:"accountURL"`
+}
+
+type DBConfig struct {
+	Host     string `json:"host"`
+	User     string `json:"username"`
+	Password string `json:"password"`
+	Port     int    `json:"port"`
+	Database string `json:"database"`
+	Driver   string `json:"driver"`
+	MaxOpen  int    `json:"max-open"`
+	MaxIdle  int    `json:"max-idle"`
+}
+
+type LogConfig struct {
+	Level        string `json:"level"`
+	ReportCaller bool   `json:"report-caller"`
+	Formatter    string `json:"formatter"`
+}
+
+type Application interface {
+	ID() string
+	Title() string
+	DBConnection() *sql.DB
 	Logger() Log
 	AddProjection(projection Projection) error
-	GetProjections() []Projection
+	Projections() []Projection
 	Migrate(ctx context.Context) error
-	GetConfig() *WeOSModuleConfig
+	Config() *ApplicationConfig
+	EventRepository() EventRepository
+	HTTPClient() *http.Client
 }
 
 //Module is the core of the WeOS framework. It has a config, command handler and basic metadata as a default.
 //This is a basic implementation and can be overwritten to include a db connection, httpCLient etc.
-type WeOSMod struct {
-	ModuleID          string `json:"moduleId"`
-	Title             string `json:"title"`
-	AccountID         string `json:"accountId"`
-	commandDispatcher Dispatcher
-	logger            Log
-	db                *sql.DB
-	HttpClient        *http.Client
-	config            *WeOSModuleConfig
-	projections       []Projection
-	AccountURL        string `json:"accountURL"`
+type BaseApplication struct {
+	id              string
+	title           string
+	logger          Log
+	db              *sql.DB
+	config          *ApplicationConfig
+	projections     []Projection
+	eventRepository EventRepository
+	httpClient      *http.Client
 }
 
-func (w *WeOSMod) Logger() Log {
+func (w *BaseApplication) Logger() Log {
 	return w.logger
 }
 
-func (w *WeOSMod) GetConfig() *WeOSModuleConfig {
+func (w *BaseApplication) Config() *ApplicationConfig {
 	return w.config
 }
 
-func (w *WeOSMod) GetModuleID() string {
-	return w.ModuleID
+func (w *BaseApplication) ID() string {
+	return w.id
 }
 
-func (w *WeOSMod) GetTitle() string {
-	return w.Title
+func (w *BaseApplication) Title() string {
+	return w.title
 }
 
-func (w *WeOSMod) GetAccountID() string {
-	return w.AccountID
-}
-
-func (w *WeOSMod) GetDBConnection() *sql.DB {
+func (w *BaseApplication) DBConnection() *sql.DB {
 	return w.db
 }
 
-func (w *WeOSMod) GetLogger() Log {
-	return w.logger
-}
-
-func (w *WeOSMod) AddProjection(projection Projection) error {
+func (w *BaseApplication) AddProjection(projection Projection) error {
 	w.projections = append(w.projections, projection)
 	return nil
 }
 
-func (w *WeOSMod) GetProjections() []Projection {
+func (w *BaseApplication) Projections() []Projection {
 	return w.projections
 }
 
-func (w *WeOSMod) Migrate(ctx context.Context) error {
+func (w *BaseApplication) Migrate(ctx context.Context) error {
 	w.logger.Infof("preparing to migrate %d projections", len(w.projections))
 	for _, projection := range w.projections {
 		err := projection.Migrate(ctx)
@@ -92,52 +115,15 @@ func (w *WeOSMod) Migrate(ctx context.Context) error {
 	return nil
 }
 
-type WeOSModuleConfig struct {
-	ModuleID    string         `json:"moduleId"`
-	Title       string         `json:"title"`
-	AccountID   string         `json:"accountId"`
-	AccountName string         `json:"accountName"`
-	Database    *WeOSDBConfig  `json:"database"`
-	Log         *WeOSLogConfig `json:"log"`
-	BaseURL     string         `json:"baseURL"`
-	LoginURL    string         `json:"loginURL"`
-	GraphQLURL  string         `json:"graphQLURL"`
-	SessionKey  string         `json:"sessionKey"`
-	Secret      string         `json:"secret"`
-	AccountURL  string         `json:"accountURL"`
+func (w *BaseApplication) EventRepository() EventRepository {
+	return w.eventRepository
 }
 
-type WeOSDBConfig struct {
-	Host     string `json:"host"`
-	User     string `json:"username"`
-	Password string `json:"password"`
-	Port     int    `json:"port"`
-	Database string `json:"database"`
-	Driver   string `json:"driver"`
-	MaxOpen  int    `json:"max-open"`
-	MaxIdle  int    `json:"max-idle"`
+func (w *BaseApplication) HTTPClient() *http.Client {
+	return w.httpClient
 }
 
-type WeOSLogConfig struct {
-	Level        string `json:"level"`
-	ReportCaller bool   `json:"report-caller"`
-	Formatter    string `json:"formatter"`
-}
-
-//NewApplication creates a new basic module that allows for injecting of a few core components
-//func NewApplication(applicationID string, applicationTitle string, accountID string, logger weos.Log, db *sql.DB, HttpClient *http.Client ) *WeOSMod {
-//	return &WeOSMod{
-//		ModuleID:    applicationID,
-//		Title: applicationTitle,
-//		AccountID:        accountID,
-//		commandDispatcher:   &DefaultDispatcher{},
-//		logger: logger,
-//		db: db,
-//		HttpClient: HttpClient,
-//	}
-//}
-
-var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger Log, db *sql.DB) (*WeOSMod, error) {
+var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *sql.DB, client *http.Client, eventRepository EventRepository) (*BaseApplication, error) {
 
 	var err error
 
@@ -221,17 +207,19 @@ var NewApplicationFromConfig = func(config *WeOSModuleConfig, logger Log, db *sq
 		db.SetMaxIdleConns(config.Database.MaxIdle)
 	}
 
-	return &WeOSMod{
-		ModuleID:          config.ModuleID,
-		Title:             config.Title,
-		AccountID:         config.AccountID,
-		commandDispatcher: &DefaultCommandDispatcher{},
-		logger:            logger,
-		db:                db,
-		config:            config,
-		AccountURL:        config.AccountURL,
-		HttpClient: &http.Client{
+	if client == nil {
+		client = &http.Client{
 			Timeout: time.Second * 10,
-		},
+		}
+	}
+
+	return &BaseApplication{
+		id:              config.ModuleID,
+		title:           config.Title,
+		logger:          logger,
+		db:              db,
+		config:          config,
+		httpClient:      client,
+		eventRepository: eventRepository,
 	}, nil
 }
