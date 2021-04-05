@@ -49,6 +49,10 @@ func TestNewApplicationFromConfig(t *testing.T) {
 			t.Error("expected the default http client to be setup")
 		}
 
+		if app.Dispatcher() == nil {
+			t.Error("expected the default command dispatcher to be setup")
+		}
+
 	})
 
 	t.Run("override logger", func(t *testing.T) {

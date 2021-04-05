@@ -59,6 +59,7 @@ type Application interface {
 	Config() *ApplicationConfig
 	EventRepository() EventRepository
 	HTTPClient() *http.Client
+	Dispatcher() Dispatcher
 }
 
 //Module is the core of the WeOS framework. It has a config, command handler and basic metadata as a default.
@@ -72,6 +73,7 @@ type BaseApplication struct {
 	projections     []Projection
 	eventRepository EventRepository
 	httpClient      *http.Client
+	dispatcher      Dispatcher
 }
 
 func (w *BaseApplication) Logger() Log {
@@ -121,6 +123,10 @@ func (w *BaseApplication) EventRepository() EventRepository {
 
 func (w *BaseApplication) HTTPClient() *http.Client {
 	return w.httpClient
+}
+
+func (w *BaseApplication) Dispatcher() Dispatcher {
+	return w.dispatcher
 }
 
 var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *sql.DB, client *http.Client, eventRepository EventRepository) (*BaseApplication, error) {
@@ -221,5 +227,6 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		config:          config,
 		httpClient:      client,
 		eventRepository: eventRepository,
+		dispatcher:      &DefaultCommandDispatcher{},
 	}, nil
 }
