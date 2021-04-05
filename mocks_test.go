@@ -5,7 +5,9 @@ package weos_test
 
 import (
 	"context"
+	"database/sql"
 	"github.com/wepala/weos"
+	"net/http"
 	"sync"
 )
 
@@ -1207,5 +1209,437 @@ func (mock *DispatcherMock) GetSubscribersCalls() []struct {
 	mock.lockGetSubscribers.RLock()
 	calls = mock.calls.GetSubscribers
 	mock.lockGetSubscribers.RUnlock()
+	return calls
+}
+
+// Ensure, that ApplicationMock does implement weos.Application.
+// If this is not the case, regenerate this file with moq.
+var _ weos.Application = &ApplicationMock{}
+
+// ApplicationMock is a mock implementation of weos.Application.
+//
+// 	func TestSomethingThatUsesApplication(t *testing.T) {
+//
+// 		// make and configure a mocked weos.Application
+// 		mockedApplication := &ApplicationMock{
+// 			AddProjectionFunc: func(projection weos.Projection) error {
+// 				panic("mock out the AddProjection method")
+// 			},
+// 			ConfigFunc: func() *weos.ApplicationConfig {
+// 				panic("mock out the Config method")
+// 			},
+// 			DBConnectionFunc: func() *sql.DB {
+// 				panic("mock out the DBConnection method")
+// 			},
+// 			DispatcherFunc: func() weos.Dispatcher {
+// 				panic("mock out the Dispatcher method")
+// 			},
+// 			EventRepositoryFunc: func() weos.EventRepository {
+// 				panic("mock out the EventRepository method")
+// 			},
+// 			HTTPClientFunc: func() *http.Client {
+// 				panic("mock out the HTTPClient method")
+// 			},
+// 			IDFunc: func() string {
+// 				panic("mock out the ID method")
+// 			},
+// 			LoggerFunc: func() weos.Log {
+// 				panic("mock out the Logger method")
+// 			},
+// 			MigrateFunc: func(ctx context.Context) error {
+// 				panic("mock out the Migrate method")
+// 			},
+// 			ProjectionsFunc: func() []weos.Projection {
+// 				panic("mock out the Projections method")
+// 			},
+// 			TitleFunc: func() string {
+// 				panic("mock out the Title method")
+// 			},
+// 		}
+//
+// 		// use mockedApplication in code that requires weos.Application
+// 		// and then make assertions.
+//
+// 	}
+type ApplicationMock struct {
+	// AddProjectionFunc mocks the AddProjection method.
+	AddProjectionFunc func(projection weos.Projection) error
+
+	// ConfigFunc mocks the Config method.
+	ConfigFunc func() *weos.ApplicationConfig
+
+	// DBConnectionFunc mocks the DBConnection method.
+	DBConnectionFunc func() *sql.DB
+
+	// DispatcherFunc mocks the Dispatcher method.
+	DispatcherFunc func() weos.Dispatcher
+
+	// EventRepositoryFunc mocks the EventRepository method.
+	EventRepositoryFunc func() weos.EventRepository
+
+	// HTTPClientFunc mocks the HTTPClient method.
+	HTTPClientFunc func() *http.Client
+
+	// IDFunc mocks the ID method.
+	IDFunc func() string
+
+	// LoggerFunc mocks the Logger method.
+	LoggerFunc func() weos.Log
+
+	// MigrateFunc mocks the Migrate method.
+	MigrateFunc func(ctx context.Context) error
+
+	// ProjectionsFunc mocks the Projections method.
+	ProjectionsFunc func() []weos.Projection
+
+	// TitleFunc mocks the Title method.
+	TitleFunc func() string
+
+	// calls tracks calls to the methods.
+	calls struct {
+		// AddProjection holds details about calls to the AddProjection method.
+		AddProjection []struct {
+			// Projection is the projection argument value.
+			Projection weos.Projection
+		}
+		// Config holds details about calls to the Config method.
+		Config []struct {
+		}
+		// DBConnection holds details about calls to the DBConnection method.
+		DBConnection []struct {
+		}
+		// Dispatcher holds details about calls to the Dispatcher method.
+		Dispatcher []struct {
+		}
+		// EventRepository holds details about calls to the EventRepository method.
+		EventRepository []struct {
+		}
+		// HTTPClient holds details about calls to the HTTPClient method.
+		HTTPClient []struct {
+		}
+		// ID holds details about calls to the ID method.
+		ID []struct {
+		}
+		// Logger holds details about calls to the Logger method.
+		Logger []struct {
+		}
+		// Migrate holds details about calls to the Migrate method.
+		Migrate []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// Projections holds details about calls to the Projections method.
+		Projections []struct {
+		}
+		// Title holds details about calls to the Title method.
+		Title []struct {
+		}
+	}
+	lockAddProjection   sync.RWMutex
+	lockConfig          sync.RWMutex
+	lockDBConnection    sync.RWMutex
+	lockDispatcher      sync.RWMutex
+	lockEventRepository sync.RWMutex
+	lockHTTPClient      sync.RWMutex
+	lockID              sync.RWMutex
+	lockLogger          sync.RWMutex
+	lockMigrate         sync.RWMutex
+	lockProjections     sync.RWMutex
+	lockTitle           sync.RWMutex
+}
+
+// AddProjection calls AddProjectionFunc.
+func (mock *ApplicationMock) AddProjection(projection weos.Projection) error {
+	if mock.AddProjectionFunc == nil {
+		panic("ApplicationMock.AddProjectionFunc: method is nil but Application.AddProjection was just called")
+	}
+	callInfo := struct {
+		Projection weos.Projection
+	}{
+		Projection: projection,
+	}
+	mock.lockAddProjection.Lock()
+	mock.calls.AddProjection = append(mock.calls.AddProjection, callInfo)
+	mock.lockAddProjection.Unlock()
+	return mock.AddProjectionFunc(projection)
+}
+
+// AddProjectionCalls gets all the calls that were made to AddProjection.
+// Check the length with:
+//     len(mockedApplication.AddProjectionCalls())
+func (mock *ApplicationMock) AddProjectionCalls() []struct {
+	Projection weos.Projection
+} {
+	var calls []struct {
+		Projection weos.Projection
+	}
+	mock.lockAddProjection.RLock()
+	calls = mock.calls.AddProjection
+	mock.lockAddProjection.RUnlock()
+	return calls
+}
+
+// Config calls ConfigFunc.
+func (mock *ApplicationMock) Config() *weos.ApplicationConfig {
+	if mock.ConfigFunc == nil {
+		panic("ApplicationMock.ConfigFunc: method is nil but Application.Config was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockConfig.Lock()
+	mock.calls.Config = append(mock.calls.Config, callInfo)
+	mock.lockConfig.Unlock()
+	return mock.ConfigFunc()
+}
+
+// ConfigCalls gets all the calls that were made to Config.
+// Check the length with:
+//     len(mockedApplication.ConfigCalls())
+func (mock *ApplicationMock) ConfigCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockConfig.RLock()
+	calls = mock.calls.Config
+	mock.lockConfig.RUnlock()
+	return calls
+}
+
+// DBConnection calls DBConnectionFunc.
+func (mock *ApplicationMock) DBConnection() *sql.DB {
+	if mock.DBConnectionFunc == nil {
+		panic("ApplicationMock.DBConnectionFunc: method is nil but Application.DBConnection was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockDBConnection.Lock()
+	mock.calls.DBConnection = append(mock.calls.DBConnection, callInfo)
+	mock.lockDBConnection.Unlock()
+	return mock.DBConnectionFunc()
+}
+
+// DBConnectionCalls gets all the calls that were made to DBConnection.
+// Check the length with:
+//     len(mockedApplication.DBConnectionCalls())
+func (mock *ApplicationMock) DBConnectionCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockDBConnection.RLock()
+	calls = mock.calls.DBConnection
+	mock.lockDBConnection.RUnlock()
+	return calls
+}
+
+// Dispatcher calls DispatcherFunc.
+func (mock *ApplicationMock) Dispatcher() weos.Dispatcher {
+	if mock.DispatcherFunc == nil {
+		panic("ApplicationMock.DispatcherFunc: method is nil but Application.Dispatcher was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockDispatcher.Lock()
+	mock.calls.Dispatcher = append(mock.calls.Dispatcher, callInfo)
+	mock.lockDispatcher.Unlock()
+	return mock.DispatcherFunc()
+}
+
+// DispatcherCalls gets all the calls that were made to Dispatcher.
+// Check the length with:
+//     len(mockedApplication.DispatcherCalls())
+func (mock *ApplicationMock) DispatcherCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockDispatcher.RLock()
+	calls = mock.calls.Dispatcher
+	mock.lockDispatcher.RUnlock()
+	return calls
+}
+
+// EventRepository calls EventRepositoryFunc.
+func (mock *ApplicationMock) EventRepository() weos.EventRepository {
+	if mock.EventRepositoryFunc == nil {
+		panic("ApplicationMock.EventRepositoryFunc: method is nil but Application.EventRepository was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockEventRepository.Lock()
+	mock.calls.EventRepository = append(mock.calls.EventRepository, callInfo)
+	mock.lockEventRepository.Unlock()
+	return mock.EventRepositoryFunc()
+}
+
+// EventRepositoryCalls gets all the calls that were made to EventRepository.
+// Check the length with:
+//     len(mockedApplication.EventRepositoryCalls())
+func (mock *ApplicationMock) EventRepositoryCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockEventRepository.RLock()
+	calls = mock.calls.EventRepository
+	mock.lockEventRepository.RUnlock()
+	return calls
+}
+
+// HTTPClient calls HTTPClientFunc.
+func (mock *ApplicationMock) HTTPClient() *http.Client {
+	if mock.HTTPClientFunc == nil {
+		panic("ApplicationMock.HTTPClientFunc: method is nil but Application.HTTPClient was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockHTTPClient.Lock()
+	mock.calls.HTTPClient = append(mock.calls.HTTPClient, callInfo)
+	mock.lockHTTPClient.Unlock()
+	return mock.HTTPClientFunc()
+}
+
+// HTTPClientCalls gets all the calls that were made to HTTPClient.
+// Check the length with:
+//     len(mockedApplication.HTTPClientCalls())
+func (mock *ApplicationMock) HTTPClientCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockHTTPClient.RLock()
+	calls = mock.calls.HTTPClient
+	mock.lockHTTPClient.RUnlock()
+	return calls
+}
+
+// ID calls IDFunc.
+func (mock *ApplicationMock) ID() string {
+	if mock.IDFunc == nil {
+		panic("ApplicationMock.IDFunc: method is nil but Application.ID was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockID.Lock()
+	mock.calls.ID = append(mock.calls.ID, callInfo)
+	mock.lockID.Unlock()
+	return mock.IDFunc()
+}
+
+// IDCalls gets all the calls that were made to ID.
+// Check the length with:
+//     len(mockedApplication.IDCalls())
+func (mock *ApplicationMock) IDCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockID.RLock()
+	calls = mock.calls.ID
+	mock.lockID.RUnlock()
+	return calls
+}
+
+// Logger calls LoggerFunc.
+func (mock *ApplicationMock) Logger() weos.Log {
+	if mock.LoggerFunc == nil {
+		panic("ApplicationMock.LoggerFunc: method is nil but Application.Logger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogger.Lock()
+	mock.calls.Logger = append(mock.calls.Logger, callInfo)
+	mock.lockLogger.Unlock()
+	return mock.LoggerFunc()
+}
+
+// LoggerCalls gets all the calls that were made to Logger.
+// Check the length with:
+//     len(mockedApplication.LoggerCalls())
+func (mock *ApplicationMock) LoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogger.RLock()
+	calls = mock.calls.Logger
+	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// Migrate calls MigrateFunc.
+func (mock *ApplicationMock) Migrate(ctx context.Context) error {
+	if mock.MigrateFunc == nil {
+		panic("ApplicationMock.MigrateFunc: method is nil but Application.Migrate was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockMigrate.Lock()
+	mock.calls.Migrate = append(mock.calls.Migrate, callInfo)
+	mock.lockMigrate.Unlock()
+	return mock.MigrateFunc(ctx)
+}
+
+// MigrateCalls gets all the calls that were made to Migrate.
+// Check the length with:
+//     len(mockedApplication.MigrateCalls())
+func (mock *ApplicationMock) MigrateCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockMigrate.RLock()
+	calls = mock.calls.Migrate
+	mock.lockMigrate.RUnlock()
+	return calls
+}
+
+// Projections calls ProjectionsFunc.
+func (mock *ApplicationMock) Projections() []weos.Projection {
+	if mock.ProjectionsFunc == nil {
+		panic("ApplicationMock.ProjectionsFunc: method is nil but Application.Projections was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockProjections.Lock()
+	mock.calls.Projections = append(mock.calls.Projections, callInfo)
+	mock.lockProjections.Unlock()
+	return mock.ProjectionsFunc()
+}
+
+// ProjectionsCalls gets all the calls that were made to Projections.
+// Check the length with:
+//     len(mockedApplication.ProjectionsCalls())
+func (mock *ApplicationMock) ProjectionsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockProjections.RLock()
+	calls = mock.calls.Projections
+	mock.lockProjections.RUnlock()
+	return calls
+}
+
+// Title calls TitleFunc.
+func (mock *ApplicationMock) Title() string {
+	if mock.TitleFunc == nil {
+		panic("ApplicationMock.TitleFunc: method is nil but Application.Title was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockTitle.Lock()
+	mock.calls.Title = append(mock.calls.Title, callInfo)
+	mock.lockTitle.Unlock()
+	return mock.TitleFunc()
+}
+
+// TitleCalls gets all the calls that were made to Title.
+// Check the length with:
+//     len(mockedApplication.TitleCalls())
+func (mock *ApplicationMock) TitleCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockTitle.RLock()
+	calls = mock.calls.Title
+	mock.lockTitle.RUnlock()
 	return calls
 }

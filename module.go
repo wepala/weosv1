@@ -1,6 +1,6 @@
 package weos
 
-//go:generate moq -out mocks_test.go -pkg weos_test . EventRepository Projection Log Dispatcher
+//go:generate moq -out mocks_test.go -pkg weos_test . EventRepository Projection Log Dispatcher Application
 
 import (
 	"context"

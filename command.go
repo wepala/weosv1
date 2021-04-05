@@ -2,6 +2,7 @@ package weos
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sync"
 	"time"
@@ -10,7 +11,7 @@ import (
 //Command is a common interface that all incoming requests should implement.
 type Command struct {
 	Type     string          `json:"type"`
-	Payload  interface{}     `json:"payload"`
+	Payload  json.RawMessage `json:"payload"`
 	Metadata CommandMetadata `json:"metadata"`
 }
 
