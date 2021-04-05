@@ -22,6 +22,8 @@ type CommandMetadata struct {
 
 type Dispatcher interface {
 	Dispatch(ctx context.Context, command *Command) error
+	AddSubscriber(command *Command, handler CommandHandler) map[string][]CommandHandler
+	GetSubscribers() map[string][]CommandHandler
 }
 
 type DefaultCommandDispatcher struct {
@@ -66,11 +68,13 @@ func (e *DefaultCommandDispatcher) Dispatch(ctx context.Context, command *Comman
 	return err
 }
 
-func (e *DefaultCommandDispatcher) AddSubscriber(command *Command, handler CommandHandler) {
+func (e *DefaultCommandDispatcher) AddSubscriber(command *Command, handler CommandHandler) map[string][]CommandHandler {
 	if e.handlers == nil {
 		e.handlers = map[string][]CommandHandler{}
 	}
 	e.handlers[command.Type] = append(e.handlers[command.Type], handler)
+
+	return e.handlers
 }
 
 func (e *DefaultCommandDispatcher) GetSubscribers() map[string][]CommandHandler {

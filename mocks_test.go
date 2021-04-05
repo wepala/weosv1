@@ -1064,8 +1064,14 @@ var _ weos.Dispatcher = &DispatcherMock{}
 //
 // 		// make and configure a mocked weos.Dispatcher
 // 		mockedDispatcher := &DispatcherMock{
+// 			AddSubscriberFunc: func(command *weos.Command, handler weos.CommandHandler) map[string][]weos.CommandHandler {
+// 				panic("mock out the AddSubscriber method")
+// 			},
 // 			DispatchFunc: func(ctx context.Context, command *weos.Command) error {
 // 				panic("mock out the Dispatch method")
+// 			},
+// 			GetSubscribersFunc: func() map[string][]weos.CommandHandler {
+// 				panic("mock out the GetSubscribers method")
 // 			},
 // 		}
 //
@@ -1074,11 +1080,24 @@ var _ weos.Dispatcher = &DispatcherMock{}
 //
 // 	}
 type DispatcherMock struct {
+	// AddSubscriberFunc mocks the AddSubscriber method.
+	AddSubscriberFunc func(command *weos.Command, handler weos.CommandHandler) map[string][]weos.CommandHandler
+
 	// DispatchFunc mocks the Dispatch method.
 	DispatchFunc func(ctx context.Context, command *weos.Command) error
 
+	// GetSubscribersFunc mocks the GetSubscribers method.
+	GetSubscribersFunc func() map[string][]weos.CommandHandler
+
 	// calls tracks calls to the methods.
 	calls struct {
+		// AddSubscriber holds details about calls to the AddSubscriber method.
+		AddSubscriber []struct {
+			// Command is the command argument value.
+			Command *weos.Command
+			// Handler is the handler argument value.
+			Handler weos.CommandHandler
+		}
 		// Dispatch holds details about calls to the Dispatch method.
 		Dispatch []struct {
 			// Ctx is the ctx argument value.
@@ -1086,8 +1105,48 @@ type DispatcherMock struct {
 			// Command is the command argument value.
 			Command *weos.Command
 		}
+		// GetSubscribers holds details about calls to the GetSubscribers method.
+		GetSubscribers []struct {
+		}
 	}
-	lockDispatch sync.RWMutex
+	lockAddSubscriber  sync.RWMutex
+	lockDispatch       sync.RWMutex
+	lockGetSubscribers sync.RWMutex
+}
+
+// AddSubscriber calls AddSubscriberFunc.
+func (mock *DispatcherMock) AddSubscriber(command *weos.Command, handler weos.CommandHandler) map[string][]weos.CommandHandler {
+	if mock.AddSubscriberFunc == nil {
+		panic("DispatcherMock.AddSubscriberFunc: method is nil but Dispatcher.AddSubscriber was just called")
+	}
+	callInfo := struct {
+		Command *weos.Command
+		Handler weos.CommandHandler
+	}{
+		Command: command,
+		Handler: handler,
+	}
+	mock.lockAddSubscriber.Lock()
+	mock.calls.AddSubscriber = append(mock.calls.AddSubscriber, callInfo)
+	mock.lockAddSubscriber.Unlock()
+	return mock.AddSubscriberFunc(command, handler)
+}
+
+// AddSubscriberCalls gets all the calls that were made to AddSubscriber.
+// Check the length with:
+//     len(mockedDispatcher.AddSubscriberCalls())
+func (mock *DispatcherMock) AddSubscriberCalls() []struct {
+	Command *weos.Command
+	Handler weos.CommandHandler
+} {
+	var calls []struct {
+		Command *weos.Command
+		Handler weos.CommandHandler
+	}
+	mock.lockAddSubscriber.RLock()
+	calls = mock.calls.AddSubscriber
+	mock.lockAddSubscriber.RUnlock()
+	return calls
 }
 
 // Dispatch calls DispatchFunc.
@@ -1122,5 +1181,31 @@ func (mock *DispatcherMock) DispatchCalls() []struct {
 	mock.lockDispatch.RLock()
 	calls = mock.calls.Dispatch
 	mock.lockDispatch.RUnlock()
+	return calls
+}
+
+// GetSubscribers calls GetSubscribersFunc.
+func (mock *DispatcherMock) GetSubscribers() map[string][]weos.CommandHandler {
+	if mock.GetSubscribersFunc == nil {
+		panic("DispatcherMock.GetSubscribersFunc: method is nil but Dispatcher.GetSubscribers was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetSubscribers.Lock()
+	mock.calls.GetSubscribers = append(mock.calls.GetSubscribers, callInfo)
+	mock.lockGetSubscribers.Unlock()
+	return mock.GetSubscribersFunc()
+}
+
+// GetSubscribersCalls gets all the calls that were made to GetSubscribers.
+// Check the length with:
+//     len(mockedDispatcher.GetSubscribersCalls())
+func (mock *DispatcherMock) GetSubscribersCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetSubscribers.RLock()
+	calls = mock.calls.GetSubscribers
+	mock.lockGetSubscribers.RUnlock()
 	return calls
 }
