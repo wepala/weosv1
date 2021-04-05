@@ -203,7 +203,7 @@ func (e *EventRepositoryGorm) GetSubscribers() ([]EventHandler, error) {
 	return e.eventDispatcher.GetSubscribers(), nil
 }
 
-func (e *EventRepositoryGorm) Migrate() error {
+func (e *EventRepositoryGorm) Migrate(ctx context.Context) error {
 	event, err := NewGormEvent(&Event{})
 	if err != nil {
 		return err
@@ -242,6 +242,7 @@ func (e *EventRepositoryGorm) Remove(entities []Entity) error {
 	return nil
 }
 
+//deprecated
 var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: db,
@@ -256,12 +257,10 @@ var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOf
 	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
 }
 
-var NewBasicEventRepository = func(db *sql.DB, logger Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: db,
-	}), nil)
-	if err != nil {
-		return nil, err
+func NewBasicEventRepository(gormDB *gorm.DB, logger Log, useUnitOfWork bool, accountID string, applicationID string) (EventRepository, error) {
+	if useUnitOfWork {
+		transaction := gormDB.Begin()
+		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, unitOfWork: useUnitOfWork, AccountID: accountID, ApplicationID: applicationID}, nil
 	}
-	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
+	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: context.Background(), AccountID: accountID, ApplicationID: applicationID}, nil
 }

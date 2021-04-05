@@ -39,6 +39,7 @@ type UnitOfWorkRepository interface {
 type EventRepository interface {
 	Repository
 	UnitOfWorkRepository
+	Datastore
 	GetByAggregate(ID string) ([]*Event, error)
 	GetByAggregateAndType(ID string, entityType string) ([]*Event, error)
 	GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error)

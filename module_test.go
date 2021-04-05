@@ -15,6 +15,7 @@ func TestNewApplicationFromConfig(t *testing.T) {
 		Title:     "Test Module",
 		AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
 		Database: &weos.DBConfig{
+			Driver:   "ramsql",
 			Host:     "localhost",
 			User:     "root",
 			Password: "password",
@@ -29,9 +30,9 @@ func TestNewApplicationFromConfig(t *testing.T) {
 	}
 
 	t.Run("basic module from config", func(t *testing.T) {
-		app, err := weos.NewApplicationFromConfig(config, nil, nil, nil, &EventRepositoryMock{})
+		app, err := weos.NewApplicationFromConfig(config, nil, nil, nil, nil)
 		if err != nil {
-			t.Fatalf("error encountered setting up app")
+			t.Fatalf("error encountered setting up app '%s'", err)
 		}
 		if app.ID() != config.ModuleID {
 			t.Errorf("expected the module id to be '%s', got '%s'", config.ModuleID, app.ID())
@@ -53,6 +54,9 @@ func TestNewApplicationFromConfig(t *testing.T) {
 			t.Error("expected the default command dispatcher to be setup")
 		}
 
+		if app.EventRepository() == nil {
+			t.Errorf("expected a default event repository to be setup")
+		}
 	})
 
 	t.Run("override logger", func(t *testing.T) {
@@ -192,6 +196,7 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 		Title:     "Test Module",
 		AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
 		Database: &weos.DBConfig{
+			Driver:   "ramsql",
 			Host:     "localhost",
 			User:     "root",
 			Password: "password",
@@ -214,7 +219,12 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 			return nil
 		},
 	}
-	app, err := weos.NewApplicationFromConfig(config, nil, nil, nil, &EventRepositoryMock{})
+	mockEventRepository := &EventRepositoryMock{
+		MigrateFunc: func(ctx context.Context) error {
+			return nil
+		},
+	}
+	app, err := weos.NewApplicationFromConfig(config, nil, nil, nil, mockEventRepository)
 	if err != nil {
 		t.Fatalf("unexpected error occured setting up module '%s'", err)
 	}

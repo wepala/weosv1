@@ -5,10 +5,17 @@ package weos
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/driver/clickhouse"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/driver/sqlserver"
+	"gorm.io/gorm"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,18 +24,19 @@ import (
 )
 
 type ApplicationConfig struct {
-	ModuleID    string     `json:"moduleId"`
-	Title       string     `json:"title"`
-	AccountID   string     `json:"accountId"`
-	AccountName string     `json:"accountName"`
-	Database    *DBConfig  `json:"database"`
-	Log         *LogConfig `json:"log"`
-	BaseURL     string     `json:"baseURL"`
-	LoginURL    string     `json:"loginURL"`
-	GraphQLURL  string     `json:"graphQLURL"`
-	SessionKey  string     `json:"sessionKey"`
-	Secret      string     `json:"secret"`
-	AccountURL  string     `json:"accountURL"`
+	ModuleID      string     `json:"moduleId"`
+	Title         string     `json:"title"`
+	AccountID     string     `json:"accountId"`
+	ApplicationID string     `json:"applicationId"`
+	AccountName   string     `json:"accountName"`
+	Database      *DBConfig  `json:"database"`
+	Log           *LogConfig `json:"log"`
+	BaseURL       string     `json:"baseURL"`
+	LoginURL      string     `json:"loginURL"`
+	GraphQLURL    string     `json:"graphQLURL"`
+	SessionKey    string     `json:"sessionKey"`
+	Secret        string     `json:"secret"`
+	AccountURL    string     `json:"accountURL"`
 }
 
 type DBConfig struct {
@@ -52,6 +60,7 @@ type Application interface {
 	ID() string
 	Title() string
 	DBConnection() *sql.DB
+	DB() *gorm.DB
 	Logger() Log
 	AddProjection(projection Projection) error
 	Projections() []Projection
@@ -68,7 +77,8 @@ type BaseApplication struct {
 	id              string
 	title           string
 	logger          Log
-	db              *sql.DB
+	dbConnection    *sql.DB
+	db              *gorm.DB
 	config          *ApplicationConfig
 	projections     []Projection
 	eventRepository EventRepository
@@ -93,7 +103,7 @@ func (w *BaseApplication) Title() string {
 }
 
 func (w *BaseApplication) DBConnection() *sql.DB {
-	return w.db
+	return w.dbConnection
 }
 
 func (w *BaseApplication) AddProjection(projection Projection) error {
@@ -105,6 +115,10 @@ func (w *BaseApplication) Projections() []Projection {
 	return w.projections
 }
 
+func (w *BaseApplication) DB() *gorm.DB {
+	return w.db
+}
+
 func (w *BaseApplication) Migrate(ctx context.Context) error {
 	w.logger.Infof("preparing to migrate %d projections", len(w.projections))
 	for _, projection := range w.projections {
@@ -112,6 +126,11 @@ func (w *BaseApplication) Migrate(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	err := w.EventRepository().Migrate(ctx)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -173,10 +192,6 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 	if db == nil && config.Database != nil {
 		var connStr string
 
-		if config.Database.Driver == "" {
-			config.Database.Driver = "postgres"
-		}
-
 		switch config.Database.Driver {
 		case "sqlite3":
 			//check if file exists and if not create it. We only do this if a memory only db is NOT asked for
@@ -199,9 +214,22 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 					config.Database.User, config.Database.Password)
 				connStr = connStr + authEnticationString
 			}
-		default:
+		case "sqlserver":
+			connStr = fmt.Sprintf("sqlserver://%s:%s@%s:%s/%s",
+				config.Database.User, config.Database.Password, config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.Database)
+		case "ramsql":
+			connStr = "Testing"
+		case "mysql":
+			connStr = fmt.Sprintf("%s:%s@tcp(%s:%s/%s)",
+				config.Database.User, config.Database.Password, config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.Database)
+		case "clickhouse":
+			connStr = fmt.Sprintf("tcp://%s:%s?username=%s&password=%s&database=%s",
+				config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.User, config.Database.Password, config.Database.Database)
+		case "postgres":
 			connStr = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 				config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.User, config.Database.Password, config.Database.Database)
+		default:
+			return nil, errors.New(fmt.Sprintf("db driver '%s' is not supported ", config.Database.Driver))
 		}
 
 		db, err = sql.Open(config.Database.Driver, connStr)
@@ -211,6 +239,51 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 
 		db.SetMaxOpenConns(config.Database.MaxOpen)
 		db.SetMaxIdleConns(config.Database.MaxIdle)
+
+	}
+
+	//setup gorm connection
+	var gormDB *gorm.DB
+	switch config.Database.Driver {
+	case "postgres":
+		gormDB, err = gorm.Open(postgres.New(postgres.Config{
+			Conn: db,
+		}), nil)
+		if err != nil {
+			return nil, err
+		}
+	case "sqlite3":
+		gormDB, err = gorm.Open(&sqlite.Dialector{
+			Conn: db,
+		}, nil)
+		if err != nil {
+			return nil, err
+		}
+	case "mysql":
+		gormDB, err = gorm.Open(mysql.New(mysql.Config{
+			Conn: db,
+		}), nil)
+		if err != nil {
+			return nil, err
+		}
+	case "ramsql": //this is for testing
+		gormDB = &gorm.DB{}
+	case "sqlserver":
+		gormDB, err = gorm.Open(sqlserver.New(sqlserver.Config{
+			Conn: db,
+		}), nil)
+		if err != nil {
+			return nil, err
+		}
+	case "clickhouse":
+		gormDB, err = gorm.Open(clickhouse.New(clickhouse.Config{
+			Conn: db,
+		}), nil)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New(fmt.Sprintf("we don't support database driver '%s'", config.Database.Driver))
 	}
 
 	if client == nil {
@@ -219,11 +292,19 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		}
 	}
 
+	if eventRepository == nil {
+		eventRepository, err = NewBasicEventRepository(gormDB, logger, false, config.AccountID, config.ApplicationID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &BaseApplication{
 		id:              config.ModuleID,
 		title:           config.Title,
 		logger:          logger,
-		db:              db,
+		dbConnection:    db,
+		db:              gormDB,
 		config:          config,
 		httpClient:      client,
 		eventRepository: eventRepository,

@@ -1,76 +1,102 @@
-package weos_test
+package integration_test
 
 import (
 	"context"
 	"database/sql"
+	"flag"
 	"fmt"
-	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
+	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"os"
 	"testing"
 )
 
 var db *sql.DB
+var gormDB *gorm.DB
+var database = flag.String("database", "sqlite3", "run database integration tests")
+var err error
 
 func TestMain(m *testing.M) {
-	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
-	}
-
-	// pulls an image, creates a container based on it and runs it
-	resource, err := pool.Run("postgres", "10.7", []string{"POSTGRES_USER=root", "POSTGRES_PASSWORD=secret", "POSTGRES_DB=test"})
-	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
-	}
-
-	// exponential backoff-retry, because the module in the container might not be ready to accept connections yet
-	if err := pool.Retry(func() error {
-		var err error
-		db, err = sql.Open("postgres", fmt.Sprintf("host=localhost port=%s user=root password=secret sslmode=disable database=test", resource.GetPort("5432/tcp")))
-		//db, err = pgx.Connect(context.Background(),fmt.Sprintf("host=localhost port=%s user=root password=secret sslmode=disable database=test", resource.GetPort("5432/tcp")))
+	flag.Parse()
+	switch *database {
+	case "postgres":
+		// uses a sensible default on windows (tcp/http) and linux/osx (socket)
+		pool, err := dockertest.NewPool("")
 		if err != nil {
-			return err
+			log.Fatalf("Could not connect to docker: %s", err.Error())
 		}
-		return db.Ping()
-	}); err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+
+		// pulls an image, creates a container based on it and runs it
+		resource, err := pool.Run("postgres", "10.7", []string{"POSTGRES_USER=root", "POSTGRES_PASSWORD=secret", "POSTGRES_DB=test"})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err.Error())
+		}
+
+		// exponential backoff-retry, because the module in the container might not be ready to accept connections yet
+		if err := pool.Retry(func() error {
+			var err error
+			db, err = sql.Open("postgres", fmt.Sprintf("host=localhost port=%s user=root password=secret sslmode=disable database=test", resource.GetPort("5432/tcp")))
+			//db, err = pgx.Connect(context.Background(),fmt.Sprintf("host=localhost port=%s user=root password=secret sslmode=disable database=test", resource.GetPort("5432/tcp")))
+			if err != nil {
+				return err
+			}
+			return db.Ping()
+		}); err != nil {
+			log.Fatalf("Could not connect to docker: %s", err.Error())
+		}
+		//setup gorm connection
+		gormDB, err = gorm.Open(postgres.New(postgres.Config{
+			Conn: db,
+		}), nil)
+		if err != nil {
+			log.Fatalf("failed to create postgresql database gorm connection '%s'", err)
+		}
+		code := m.Run()
+
+		// You can't defer this because os.Exit doesn't care for defer
+		if err := pool.Purge(resource); err != nil {
+			log.Fatalf("Could not purge resource: %s", err.Error())
+		}
+
+		os.Exit(code)
+	case "sqlite3":
+		db, err = sql.Open(*database, "test.db")
+		if err != nil {
+			log.Fatalf("failed to create sqlite database '%s'", err)
+		}
+		//setup gorm connection
+		gormDB, err = gorm.Open(&sqlite.Dialector{
+			Conn: db,
+		}, nil)
+		if err != nil {
+			log.Fatalf("failed to create sqlite database gorm connection '%s'", err)
+		}
+
+		code := m.Run()
+
+		os.Remove("test.db")
+		os.Exit(code)
 	}
 
-	//init.db
-	//query, err := ioutil.ReadFile("./testdata/sql/init.sql")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//if _, err := db.Exec(string(query)); err != nil {
-	//	panic(err)
-	//}
-
-	code := m.Run()
-
-	// You can't defer this because os.Exit doesn't care for defer
-	if err := pool.Purge(resource); err != nil {
-		log.Fatalf("Could not purge resource: %s", err)
-	}
-
-	os.Exit(code)
 }
 
 func TestEventRepositoryGorm_Persist(t *testing.T) {
-	eventRepository, err := weos.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "accountID", "applicationID", "user id", "group id")
+	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
-		t.Fatalf("error encountered creating event repository '%s'", err)
+		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
-		t.Fatalf("error encountered migration event repository '%s'", err)
+		t.Fatalf("error setting up application'%s'", err)
 	}
 
 	mockEvent := &weos.Event{
-		ID:      "some event id",
+		ID:      ksuid.New().String(),
 		Type:    "TEST_EVENT",
 		Payload: nil,
 		Meta: weos.EventMeta{
@@ -90,10 +116,6 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 	err = eventRepository.Persist([]weos.Entity{mockEvent})
 	if err != nil {
 		t.Fatalf("error encountered persisting event '%s'", err)
-	}
-	err = eventRepository.Flush()
-	if err != nil {
-		t.Fatalf("error encountered saving events '%s'", err)
 	}
 
 	if eventHandlerCalled != 1 {
@@ -127,11 +149,11 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
-	eventRepository, err := weos.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "123", "456")
 	if err != nil {
-		t.Fatalf("error encountered creating event repository '%s'", err)
+		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
@@ -154,11 +176,6 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
 
-	err = eventRepository.Flush()
-	if err != nil {
-		t.Fatalf("error encountered flushing events '%s'", err)
-	}
-
 	events, err := eventRepository.GetByAggregate("1iNfR0jYD9UbYocH8D3WK6N4pG9")
 	if err != nil {
 		t.Fatalf("encountered error getting aggregate '%s' error: '%s'", "1iNfR0jYD9UbYocH8D3WK6N4pG9", err)
@@ -170,13 +187,13 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
-	eventRepository, err := weos.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
-		t.Fatalf("error encountered creating event repository '%s'", err)
+		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
-		t.Fatalf("error encountered migration event repository '%s'", err)
+		t.Fatalf("failed to run migrations")
 	}
 	mockEvent, _ := weos.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
 		Title string `json:"title"`
@@ -197,11 +214,6 @@ func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
 
-	err = eventRepository.Flush()
-	if err != nil {
-		t.Fatalf("error encountered flushing events '%s'", err)
-	}
-
 	events, err := eventRepository.GetByAggregateAndType("1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate")
 	if err != nil {
 		t.Fatalf("encountered error getting aggregate '%s' error: '%s'", "1iNfR0jYD9UbYocH8D3WK6N4pG9", err)
@@ -219,14 +231,13 @@ func TestSaveAggregateEvents(t *testing.T) {
 	}
 
 	baseAggregate := &BaseAggregate{}
-
-	eventRepository, err := weos.NewEventRepositoryWithGORM(db, nil, true, log.New(), context.Background(), "", "", "", "")
+	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "123", "456")
 	if err != nil {
-		t.Fatalf("error encountered creating event repository '%s'", err)
+		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate()
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
-		t.Fatalf("error encountered migration event repository '%s'", err)
+		t.Fatalf("failed to run migrations")
 	}
 	err = eventRepository.Persist(baseAggregate.GetNewChanges())
 	if err != nil {

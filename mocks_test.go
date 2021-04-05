@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/wepala/weos"
+	"gorm.io/gorm"
 	"net/http"
 	"sync"
 )
@@ -39,6 +40,9 @@ var _ weos.EventRepository = &EventRepositoryMock{}
 // 			GetSubscribersFunc: func() ([]weos.EventHandler, error) {
 // 				panic("mock out the GetSubscribers method")
 // 			},
+// 			MigrateFunc: func(ctx context.Context) error {
+// 				panic("mock out the Migrate method")
+// 			},
 // 			PersistFunc: func(entities []weos.Entity) error {
 // 				panic("mock out the Persist method")
 // 			},
@@ -69,6 +73,9 @@ type EventRepositoryMock struct {
 
 	// GetSubscribersFunc mocks the GetSubscribers method.
 	GetSubscribersFunc func() ([]weos.EventHandler, error)
+
+	// MigrateFunc mocks the Migrate method.
+	MigrateFunc func(ctx context.Context) error
 
 	// PersistFunc mocks the Persist method.
 	PersistFunc func(entities []weos.Entity) error
@@ -110,6 +117,11 @@ type EventRepositoryMock struct {
 		// GetSubscribers holds details about calls to the GetSubscribers method.
 		GetSubscribers []struct {
 		}
+		// Migrate holds details about calls to the Migrate method.
+		Migrate []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// Persist holds details about calls to the Persist method.
 		Persist []struct {
 			// Entities is the entities argument value.
@@ -127,6 +139,7 @@ type EventRepositoryMock struct {
 	lockGetByAggregateAndSequenceRange sync.RWMutex
 	lockGetByAggregateAndType          sync.RWMutex
 	lockGetSubscribers                 sync.RWMutex
+	lockMigrate                        sync.RWMutex
 	lockPersist                        sync.RWMutex
 	lockRemove                         sync.RWMutex
 }
@@ -316,6 +329,37 @@ func (mock *EventRepositoryMock) GetSubscribersCalls() []struct {
 	mock.lockGetSubscribers.RLock()
 	calls = mock.calls.GetSubscribers
 	mock.lockGetSubscribers.RUnlock()
+	return calls
+}
+
+// Migrate calls MigrateFunc.
+func (mock *EventRepositoryMock) Migrate(ctx context.Context) error {
+	if mock.MigrateFunc == nil {
+		panic("EventRepositoryMock.MigrateFunc: method is nil but EventRepository.Migrate was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockMigrate.Lock()
+	mock.calls.Migrate = append(mock.calls.Migrate, callInfo)
+	mock.lockMigrate.Unlock()
+	return mock.MigrateFunc(ctx)
+}
+
+// MigrateCalls gets all the calls that were made to Migrate.
+// Check the length with:
+//     len(mockedEventRepository.MigrateCalls())
+func (mock *EventRepositoryMock) MigrateCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockMigrate.RLock()
+	calls = mock.calls.Migrate
+	mock.lockMigrate.RUnlock()
 	return calls
 }
 
@@ -1228,6 +1272,9 @@ var _ weos.Application = &ApplicationMock{}
 // 			ConfigFunc: func() *weos.ApplicationConfig {
 // 				panic("mock out the Config method")
 // 			},
+// 			DBFunc: func() *gorm.DB {
+// 				panic("mock out the DB method")
+// 			},
 // 			DBConnectionFunc: func() *sql.DB {
 // 				panic("mock out the DBConnection method")
 // 			},
@@ -1268,6 +1315,9 @@ type ApplicationMock struct {
 	// ConfigFunc mocks the Config method.
 	ConfigFunc func() *weos.ApplicationConfig
 
+	// DBFunc mocks the DB method.
+	DBFunc func() *gorm.DB
+
 	// DBConnectionFunc mocks the DBConnection method.
 	DBConnectionFunc func() *sql.DB
 
@@ -1305,6 +1355,9 @@ type ApplicationMock struct {
 		// Config holds details about calls to the Config method.
 		Config []struct {
 		}
+		// DB holds details about calls to the DB method.
+		DB []struct {
+		}
 		// DBConnection holds details about calls to the DBConnection method.
 		DBConnection []struct {
 		}
@@ -1337,6 +1390,7 @@ type ApplicationMock struct {
 	}
 	lockAddProjection   sync.RWMutex
 	lockConfig          sync.RWMutex
+	lockDB              sync.RWMutex
 	lockDBConnection    sync.RWMutex
 	lockDispatcher      sync.RWMutex
 	lockEventRepository sync.RWMutex
@@ -1402,6 +1456,32 @@ func (mock *ApplicationMock) ConfigCalls() []struct {
 	mock.lockConfig.RLock()
 	calls = mock.calls.Config
 	mock.lockConfig.RUnlock()
+	return calls
+}
+
+// DB calls DBFunc.
+func (mock *ApplicationMock) DB() *gorm.DB {
+	if mock.DBFunc == nil {
+		panic("ApplicationMock.DBFunc: method is nil but Application.DB was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockDB.Lock()
+	mock.calls.DB = append(mock.calls.DB, callInfo)
+	mock.lockDB.Unlock()
+	return mock.DBFunc()
+}
+
+// DBCalls gets all the calls that were made to DB.
+// Check the length with:
+//     len(mockedApplication.DBCalls())
+func (mock *ApplicationMock) DBCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockDB.RLock()
+	calls = mock.calls.DB
+	mock.lockDB.RUnlock()
 	return calls
 }
 
