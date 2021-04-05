@@ -16,7 +16,7 @@ func TestCommandDisptacher_Dispatch(t *testing.T) {
 	}
 	dispatcher := &weos.DefaultCommandDispatcher{}
 	handlersCalled := 0
-	dispatcher.AddSubscriber(mockCommand, func(command *weos.Command) error {
+	dispatcher.AddSubscriber(mockCommand, func(ctx context.Context, command *weos.Command) error {
 		handlersCalled += 1
 		return nil
 	})
@@ -25,7 +25,7 @@ func TestCommandDisptacher_Dispatch(t *testing.T) {
 		Type:     "*",
 		Payload:  nil,
 		Metadata: weos.CommandMetadata{},
-	}, func(event *weos.Command) error {
+	}, func(context context.Context, event *weos.Command) error {
 		handlersCalled += 1
 		if event.Type != mockCommand.Type {
 			t.Errorf("expected the type to be '%s', got '%s'", mockCommand.Type, event.Type)

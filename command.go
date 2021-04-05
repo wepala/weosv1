@@ -56,7 +56,7 @@ func (e *DefaultCommandDispatcher) Dispatch(ctx context.Context, command *Comman
 					}
 					wg.Done()
 				}()
-				err = handler(command)
+				err = handler(ctx, command)
 			}()
 		}
 
@@ -77,4 +77,4 @@ func (e *DefaultCommandDispatcher) GetSubscribers() map[string][]CommandHandler 
 	return e.handlers
 }
 
-type CommandHandler func(command *Command) error
+type CommandHandler func(ctx context.Context, command *Command) error
