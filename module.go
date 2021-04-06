@@ -152,7 +152,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 
 	var err error
 
-	if logger == nil && config.Log != nil {
+	if logger == nil {
 		//	if config.Log.Level != "" {
 		//		switch config.Log.Level {
 		//		case "debug":
