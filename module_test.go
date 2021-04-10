@@ -223,6 +223,9 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 		MigrateFunc: func(ctx context.Context) error {
 			return nil
 		},
+		AddSubscriberFunc: func(handler weos.EventHandler) {
+
+		},
 	}
 	app, err := weos.NewApplicationFromConfig(config, nil, nil, nil, mockEventRepository)
 	if err != nil {
@@ -241,6 +244,10 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 
 	if len(mockProjection.MigrateCalls()) != 1 {
 		t.Errorf("expected the migrate function to be called %d time, called %d times", 1, len(mockProjection.MigrateCalls()))
+	}
+
+	if len(mockProjection.GetEventHandlerCalls()) != 1 {
+		t.Errorf("expected the get event handler to be called %d time, called %d times", 1, len(mockProjection.GetEventHandlerCalls()))
 	}
 
 	//TODO confirm that the handler from the projection is added to the event repository IF one is configured
