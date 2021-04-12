@@ -43,11 +43,8 @@ var _ weos.EventRepository = &EventRepositoryMock{}
 // 			MigrateFunc: func(ctx context.Context) error {
 // 				panic("mock out the Migrate method")
 // 			},
-// 			PersistFunc: func(entities []weos.Entity) error {
+// 			PersistFunc: func(entity weos.AggregateInterface) error {
 // 				panic("mock out the Persist method")
-// 			},
-// 			RemoveFunc: func(entities []weos.Entity) error {
-// 				panic("mock out the Remove method")
 // 			},
 // 		}
 //
@@ -78,10 +75,7 @@ type EventRepositoryMock struct {
 	MigrateFunc func(ctx context.Context) error
 
 	// PersistFunc mocks the Persist method.
-	PersistFunc func(entities []weos.Entity) error
-
-	// RemoveFunc mocks the Remove method.
-	RemoveFunc func(entities []weos.Entity) error
+	PersistFunc func(entity weos.AggregateInterface) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -124,13 +118,8 @@ type EventRepositoryMock struct {
 		}
 		// Persist holds details about calls to the Persist method.
 		Persist []struct {
-			// Entities is the entities argument value.
-			Entities []weos.Entity
-		}
-		// Remove holds details about calls to the Remove method.
-		Remove []struct {
-			// Entities is the entities argument value.
-			Entities []weos.Entity
+			// Entity is the entity argument value.
+			Entity weos.AggregateInterface
 		}
 	}
 	lockAddSubscriber                  sync.RWMutex
@@ -141,7 +130,6 @@ type EventRepositoryMock struct {
 	lockGetSubscribers                 sync.RWMutex
 	lockMigrate                        sync.RWMutex
 	lockPersist                        sync.RWMutex
-	lockRemove                         sync.RWMutex
 }
 
 // AddSubscriber calls AddSubscriberFunc.
@@ -364,64 +352,33 @@ func (mock *EventRepositoryMock) MigrateCalls() []struct {
 }
 
 // Persist calls PersistFunc.
-func (mock *EventRepositoryMock) Persist(entities []weos.Entity) error {
+func (mock *EventRepositoryMock) Persist(entity weos.AggregateInterface) error {
 	if mock.PersistFunc == nil {
 		panic("EventRepositoryMock.PersistFunc: method is nil but EventRepository.Persist was just called")
 	}
 	callInfo := struct {
-		Entities []weos.Entity
+		Entity weos.AggregateInterface
 	}{
-		Entities: entities,
+		Entity: entity,
 	}
 	mock.lockPersist.Lock()
 	mock.calls.Persist = append(mock.calls.Persist, callInfo)
 	mock.lockPersist.Unlock()
-	return mock.PersistFunc(entities)
+	return mock.PersistFunc(entity)
 }
 
 // PersistCalls gets all the calls that were made to Persist.
 // Check the length with:
 //     len(mockedEventRepository.PersistCalls())
 func (mock *EventRepositoryMock) PersistCalls() []struct {
-	Entities []weos.Entity
+	Entity weos.AggregateInterface
 } {
 	var calls []struct {
-		Entities []weos.Entity
+		Entity weos.AggregateInterface
 	}
 	mock.lockPersist.RLock()
 	calls = mock.calls.Persist
 	mock.lockPersist.RUnlock()
-	return calls
-}
-
-// Remove calls RemoveFunc.
-func (mock *EventRepositoryMock) Remove(entities []weos.Entity) error {
-	if mock.RemoveFunc == nil {
-		panic("EventRepositoryMock.RemoveFunc: method is nil but EventRepository.Remove was just called")
-	}
-	callInfo := struct {
-		Entities []weos.Entity
-	}{
-		Entities: entities,
-	}
-	mock.lockRemove.Lock()
-	mock.calls.Remove = append(mock.calls.Remove, callInfo)
-	mock.lockRemove.Unlock()
-	return mock.RemoveFunc(entities)
-}
-
-// RemoveCalls gets all the calls that were made to Remove.
-// Check the length with:
-//     len(mockedEventRepository.RemoveCalls())
-func (mock *EventRepositoryMock) RemoveCalls() []struct {
-	Entities []weos.Entity
-} {
-	var calls []struct {
-		Entities []weos.Entity
-	}
-	mock.lockRemove.RLock()
-	calls = mock.calls.Remove
-	mock.lockRemove.RUnlock()
 	return calls
 }
 

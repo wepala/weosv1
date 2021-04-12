@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 )
 
+type AggregateInterface interface {
+	NewChange(event *Event)
+	GetNewChanges() []Entity
+	Persist()
+}
+
 //AggregateRoot Is a base struct for WeOS applications to use. This is event sourcing ready by default
 type AggregateRoot struct {
 	BasicEntity
@@ -28,6 +34,11 @@ func (w *AggregateRoot) NewChange(event *Event) {
 
 func (w *AggregateRoot) GetNewChanges() []Entity {
 	return w.newEvents
+}
+
+//Persist clears the new events array
+func (w *AggregateRoot) Persist() {
+	w.newEvents = nil
 }
 
 var DefaultReducer = func(initialState Entity, event *Event, next Reducer) Entity {

@@ -56,12 +56,10 @@ func NewGormEvent(event *Event) (GormEvent, error) {
 	}, nil
 }
 
-func (e *EventRepositoryGorm) Persist(entities []Entity) error {
-	//TODO use the information in the context to get account info, module info.
-	if len(entities) == 0 {
-		return nil
-	} //didn't think it should barf if an empty list is passed
+func (e *EventRepositoryGorm) Persist(entity AggregateInterface) error {
+	//TODO use the information in the context to get account info, module info. //didn't think it should barf if an empty list is passed
 	var gormEvents []GormEvent
+	entities := entity.GetNewChanges()
 	savePointID := "s" + ksuid.New().String() //NOTE the save point can't start with a number
 	e.logger.Infof("persisting %d events with save point %s", len(entities), savePointID)
 	if e.unitOfWork {
@@ -105,6 +103,9 @@ func (e *EventRepositoryGorm) Persist(entities []Entity) error {
 	if db.Error != nil {
 		return db.Error
 	}
+
+	//call persist on the aggregate root to clear the new changes array
+	entity.Persist()
 
 	for _, entity := range entities {
 		e.eventDispatcher.Dispatch(*entity.(*Event))

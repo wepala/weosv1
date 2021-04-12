@@ -113,7 +113,10 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		eventHandlerCalled += 1
 	})
 
-	err = eventRepository.Persist([]weos.Entity{mockEvent})
+	entity := &weos.AggregateRoot{}
+	entity.NewChange(mockEvent)
+
+	err = eventRepository.Persist(entity)
 	if err != nil {
 		t.Fatalf("error encountered persisting event '%s'", err)
 	}
@@ -171,7 +174,12 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
 
-	err = eventRepository.Persist([]weos.Entity{mockEvent, mockEvent2, mockEvent3})
+	entity := &weos.AggregateRoot{}
+	entity.NewChange(mockEvent)
+	entity.NewChange(mockEvent2)
+	entity.NewChange(mockEvent3)
+
+	err = eventRepository.Persist(entity)
 	if err != nil {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
@@ -209,7 +217,12 @@ func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
 
-	err = eventRepository.Persist([]weos.Entity{mockEvent, mockEvent2, mockEvent3})
+	entity := &weos.AggregateRoot{}
+	entity.NewChange(mockEvent)
+	entity.NewChange(mockEvent2)
+	entity.NewChange(mockEvent3)
+
+	err = eventRepository.Persist(entity)
 	if err != nil {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
@@ -231,6 +244,11 @@ func TestSaveAggregateEvents(t *testing.T) {
 	}
 
 	baseAggregate := &BaseAggregate{}
+	event, err := weos.NewBasicEvent("test.event", "123", "BaseAggregate", "")
+	if err != nil {
+		t.Fatalf("unexpected error setting up test event '%s'", err)
+	}
+	baseAggregate.NewChange(event)
 	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "123", "456")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
@@ -239,8 +257,12 @@ func TestSaveAggregateEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to run migrations")
 	}
-	err = eventRepository.Persist(baseAggregate.GetNewChanges())
+	err = eventRepository.Persist(baseAggregate)
 	if err != nil {
-		t.Fatalf("encountered error perssiting aggregate events")
+		t.Fatalf("encountered error persiting aggregate events")
+	}
+
+	if len(baseAggregate.GetNewChanges()) > 0 {
+		t.Error("expected the list of new changes to be cleared")
 	}
 }
