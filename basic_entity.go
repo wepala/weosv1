@@ -2,7 +2,7 @@ package weos
 
 type BasicEntity struct {
 	entityErrors []error
-	ID           string
+	ID           string `json:"id"`
 }
 
 func (b *BasicEntity) IsValid() bool {
