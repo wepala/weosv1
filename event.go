@@ -33,6 +33,21 @@ var NewBasicEvent = func(eventType string, entityID string, entityType string, p
 	}, nil
 }
 
+var NewAggregateEvent = func(eventType string, entity Entity, payload interface{}) *Event {
+	payloadBytes, _ := json.Marshal(payload)
+	return &Event{
+		ID:      ksuid.New().String(),
+		Type:    eventType,
+		Payload: payloadBytes,
+		Version: 1,
+		Meta: EventMeta{
+			EntityID:   entity.GetID(),
+			EntityType: GetType(entity),
+			Created:    time.Now().Format(time.RFC3339Nano),
+		},
+	}
+}
+
 var NewVersionEvent = func(eventType string, entityID string, payload interface{}, version int) (*Event, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {

@@ -97,3 +97,24 @@ func TestEvent_IsValid(t *testing.T) {
 	})
 
 }
+
+type BaseAggregate struct {
+	weos.AggregateRoot
+}
+
+func TestNewAggregateEvent(t *testing.T) {
+	entity := &BaseAggregate{}
+	entity.ID = "1iNqlx5htN0oJ3viyfWkAofJX7k"
+	event := weos.NewAggregateEvent("TEST_EVENT", entity, nil)
+	if event.Type != "TEST_EVENT" {
+		t.Errorf("expected event to be type '%s', got '%s'", "TEST_EVENT", event.Type)
+	}
+
+	if event.Meta.EntityID != "1iNqlx5htN0oJ3viyfWkAofJX7k" {
+		t.Errorf("expected the entity id to be '%s', got'%s'", "1iNqlx5htN0oJ3viyfWkAofJX7k", event.Meta.EntityID)
+	}
+
+	if event.Meta.EntityType != "BaseAggregate" {
+		t.Errorf("expected the entity to have entityType '%s', got '%s'", "BaseAggregate", event.Meta.EntityType)
+	}
+}
