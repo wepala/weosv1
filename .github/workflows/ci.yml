@@ -6,7 +6,6 @@ env:
   SLACK_USERNAME: WeOS CRM
   SLACK_ICON: https://github.com/wepala.png?size=48
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-  SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
   GOPRIVATE: github.com/wepala/*
   GITHUB_USERNAME: ${{ secrets.GO_MODULES_GITHUB_USERNAME }}
   GITHUB_TOKEN: ${{ secrets.GO_MODULES_TOKEN }}
