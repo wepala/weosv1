@@ -6,14 +6,13 @@ env:
   SLACK_USERNAME: WeOS CRM
   SLACK_ICON: https://github.com/wepala.png?size=48
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-  SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
   GOPRIVATE: github.com/wepala/*
   GITHUB_USERNAME: ${{ secrets.GO_MODULES_GITHUB_USERNAME }}
   GITHUB_TOKEN: ${{ secrets.GO_MODULES_TOKEN }}
 
 jobs:
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -22,17 +21,17 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14.x
+          go-version: 1.16.x
       - name: Run unit tests
         run: go test -v ./...
       - name: Send success notification
-        uses: rtCamp/action-slack-notify@v2.0.0
+        uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: "#32BD65"
           SLACK_MESSAGE: We were able to test your code without problems, not bad
           SLACK_TITLE: Tests passed
       - name: Send failure notification
-        uses: rtCamp/action-slack-notify@v2.0.0
+        uses: rtCamp/action-slack-notify@v2
         if: failure()
         env:
           SLACK_COLOR: "#FF0000"

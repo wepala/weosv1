@@ -27,7 +27,7 @@ func (w *AggregateRoot) SetUser(user User) {
 }
 
 func (w *AggregateRoot) NewChange(event *Event) {
-	w.SequenceNo = w.SequenceNo + 1
+	w.SequenceNo += 1
 	event.Meta.SequenceNo = w.SequenceNo
 	w.newEvents = append(w.newEvents, event)
 }
