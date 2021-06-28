@@ -19,6 +19,7 @@ type CommandMetadata struct {
 	Version       int64
 	ExecutionDate *time.Time
 	UserID        string
+	WorkspaceID   string
 }
 
 type Dispatcher interface {
