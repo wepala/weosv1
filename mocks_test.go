@@ -43,7 +43,7 @@ var _ weos.EventRepository = &EventRepositoryMock{}
 // 			MigrateFunc: func(ctx context.Context) error {
 // 				panic("mock out the Migrate method")
 // 			},
-// 			PersistFunc: func(entity weos.AggregateInterface) error {
+// 			PersistFunc: func(entity weos.AggregateInterface, meta weos.EventMeta) error {
 // 				panic("mock out the Persist method")
 // 			},
 // 		}
@@ -75,7 +75,7 @@ type EventRepositoryMock struct {
 	MigrateFunc func(ctx context.Context) error
 
 	// PersistFunc mocks the Persist method.
-	PersistFunc func(entity weos.AggregateInterface) error
+	PersistFunc func(entity weos.AggregateInterface, meta weos.EventMeta) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -120,6 +120,8 @@ type EventRepositoryMock struct {
 		Persist []struct {
 			// Entity is the entity argument value.
 			Entity weos.AggregateInterface
+			// Meta is the meta argument value.
+			Meta weos.EventMeta
 		}
 	}
 	lockAddSubscriber                  sync.RWMutex
@@ -352,19 +354,21 @@ func (mock *EventRepositoryMock) MigrateCalls() []struct {
 }
 
 // Persist calls PersistFunc.
-func (mock *EventRepositoryMock) Persist(entity weos.AggregateInterface) error {
+func (mock *EventRepositoryMock) Persist(entity weos.AggregateInterface, meta weos.EventMeta) error {
 	if mock.PersistFunc == nil {
 		panic("EventRepositoryMock.PersistFunc: method is nil but EventRepository.Persist was just called")
 	}
 	callInfo := struct {
 		Entity weos.AggregateInterface
+		Meta   weos.EventMeta
 	}{
 		Entity: entity,
+		Meta:   meta,
 	}
 	mock.lockPersist.Lock()
 	mock.calls.Persist = append(mock.calls.Persist, callInfo)
 	mock.lockPersist.Unlock()
-	return mock.PersistFunc(entity)
+	return mock.PersistFunc(entity, meta)
 }
 
 // PersistCalls gets all the calls that were made to Persist.
@@ -372,9 +376,11 @@ func (mock *EventRepositoryMock) Persist(entity weos.AggregateInterface) error {
 //     len(mockedEventRepository.PersistCalls())
 func (mock *EventRepositoryMock) PersistCalls() []struct {
 	Entity weos.AggregateInterface
+	Meta   weos.EventMeta
 } {
 	var calls []struct {
 		Entity weos.AggregateInterface
+		Meta   weos.EventMeta
 	}
 	mock.lockPersist.RLock()
 	calls = mock.calls.Persist

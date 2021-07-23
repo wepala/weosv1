@@ -39,7 +39,7 @@ type UnitOfWorkRepository interface {
 type EventRepository interface {
 	UnitOfWorkRepository
 	Datastore
-	Persist(entity AggregateInterface) error
+	Persist(entity AggregateInterface, meta EventMeta) error
 	GetByAggregate(ID string) ([]*Event, error)
 	GetByAggregateAndType(ID string, entityType string) ([]*Event, error)
 	GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error)
