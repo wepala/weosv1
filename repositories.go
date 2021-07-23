@@ -56,7 +56,7 @@ func NewGormEvent(event *Event) (GormEvent, error) {
 	}, nil
 }
 
-func (e *EventRepositoryGorm) Persist(entity AggregateInterface) error {
+func (e *EventRepositoryGorm) Persist(entity AggregateInterface, meta EventMeta) error {
 	//TODO use the information in the context to get account info, module info. //didn't think it should barf if an empty list is passed
 	var gormEvents []GormEvent
 	entities := entity.GetNewChanges()
@@ -70,10 +70,10 @@ func (e *EventRepositoryGorm) Persist(entity AggregateInterface) error {
 		event := entity.(*Event)
 		//let's fill in meta data if it's not already in the object
 		if event.Meta.User == "" {
-			event.Meta.User = e.UserID
+			event.Meta.User = meta.User
 		}
 		if event.Meta.Account == "" {
-			event.Meta.Account = e.AccountID
+			event.Meta.Account = meta.Account
 		}
 		if event.Meta.Module == "" {
 			event.Meta.Module = e.ApplicationID
