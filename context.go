@@ -10,6 +10,7 @@ type ContextKey string
 const ACCOUNT_ID ContextKey = "ACCOUNT_ID"
 const USER_ID ContextKey = "USER_ID"
 const LOG_LEVEL ContextKey = "LOG_LEVEL"
+const REQUEST_ID ContextKey = "REQUEST_ID"
 
 //---- Context Getters
 
@@ -29,9 +30,17 @@ func GetUser(ctx context.Context) string {
 	return ""
 }
 
-//Get user info from context
+//Get log level from context
 func GetLogLevel(ctx context.Context) string {
 	if value, ok := ctx.Value(LOG_LEVEL).(string); ok {
+		return value
+	}
+	return ""
+}
+
+//Get request id from context
+func GetRequestID(ctx context.Context) string {
+	if value, ok := ctx.Value(REQUEST_ID).(string); ok {
 		return value
 	}
 	return ""

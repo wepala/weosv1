@@ -31,4 +31,12 @@ func TestGetAccount(t *testing.T) {
 		}
 	})
 
+	t.Run("get request id", func(t *testing.T) {
+		ctxt := context.WithValue(context.Background(), weos.REQUEST_ID, "123")
+		requestID := weos.GetRequestID(ctxt)
+		if requestID != "123" {
+			t.Errorf("expected request id to be '%s', got '%s'", "123", requestID)
+		}
+	})
+
 }
