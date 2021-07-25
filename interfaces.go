@@ -1,6 +1,6 @@
 package weos
 
-import "context"
+import "golang.org/x/net/context"
 
 //go:generate moq -out mocks_test.go -pkg weos_test . EventRepository
 type WeOSEntity interface {

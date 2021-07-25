@@ -1,10 +1,10 @@
 package weos
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"github.com/segmentio/ksuid"
+	"golang.org/x/net/context"
 	"gorm.io/datatypes"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -15,7 +15,6 @@ type EventRepositoryGorm struct {
 	gormDB          *gorm.DB
 	eventDispatcher EventDisptacher
 	logger          Log
-	ctx             context.Context
 	unitOfWork      bool
 	AccountID       string
 	ApplicationID   string
@@ -253,9 +252,9 @@ var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOf
 	}
 	if useUnitOfWork {
 		transaction := gormDB.Begin()
-		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, ctx: ctx, unitOfWork: useUnitOfWork, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
+		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, unitOfWork: useUnitOfWork, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
 	}
-	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: ctx, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
+	return &EventRepositoryGorm{DB: gormDB, logger: logger, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
 }
 
 func NewBasicEventRepository(gormDB *gorm.DB, logger Log, useUnitOfWork bool, accountID string, applicationID string) (EventRepository, error) {
@@ -263,5 +262,5 @@ func NewBasicEventRepository(gormDB *gorm.DB, logger Log, useUnitOfWork bool, ac
 		transaction := gormDB.Begin()
 		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, unitOfWork: useUnitOfWork, AccountID: accountID, ApplicationID: applicationID}, nil
 	}
-	return &EventRepositoryGorm{DB: gormDB, logger: logger, ctx: context.Background(), AccountID: accountID, ApplicationID: applicationID}, nil
+	return &EventRepositoryGorm{DB: gormDB, logger: logger, AccountID: accountID, ApplicationID: applicationID}, nil
 }

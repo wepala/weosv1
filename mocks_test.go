@@ -4,9 +4,9 @@
 package weos_test
 
 import (
-	"context"
 	"database/sql"
 	"github.com/wepala/weos"
+	"golang.org/x/net/context"
 	"gorm.io/gorm"
 	"net/http"
 	"sync"
