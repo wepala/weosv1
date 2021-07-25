@@ -4,9 +4,9 @@
 package weos_test
 
 import (
+	"context"
 	"database/sql"
 	"github.com/wepala/weos"
-	"golang.org/x/net/context"
 	"gorm.io/gorm"
 	"net/http"
 	"sync"
@@ -43,7 +43,7 @@ var _ weos.EventRepository = &EventRepositoryMock{}
 // 			MigrateFunc: func(ctx context.Context) error {
 // 				panic("mock out the Migrate method")
 // 			},
-// 			PersistFunc: func(entity weos.AggregateInterface, meta weos.EventMeta) error {
+// 			PersistFunc: func(ctxt context.Context, entity weos.AggregateInterface) error {
 // 				panic("mock out the Persist method")
 // 			},
 // 		}
@@ -75,7 +75,7 @@ type EventRepositoryMock struct {
 	MigrateFunc func(ctx context.Context) error
 
 	// PersistFunc mocks the Persist method.
-	PersistFunc func(entity weos.AggregateInterface, meta weos.EventMeta) error
+	PersistFunc func(ctxt context.Context, entity weos.AggregateInterface) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -118,10 +118,10 @@ type EventRepositoryMock struct {
 		}
 		// Persist holds details about calls to the Persist method.
 		Persist []struct {
+			// Ctxt is the ctxt argument value.
+			Ctxt context.Context
 			// Entity is the entity argument value.
 			Entity weos.AggregateInterface
-			// Meta is the meta argument value.
-			Meta weos.EventMeta
 		}
 	}
 	lockAddSubscriber                  sync.RWMutex
@@ -354,33 +354,33 @@ func (mock *EventRepositoryMock) MigrateCalls() []struct {
 }
 
 // Persist calls PersistFunc.
-func (mock *EventRepositoryMock) Persist(entity weos.AggregateInterface, meta weos.EventMeta) error {
+func (mock *EventRepositoryMock) Persist(ctxt context.Context, entity weos.AggregateInterface) error {
 	if mock.PersistFunc == nil {
 		panic("EventRepositoryMock.PersistFunc: method is nil but EventRepository.Persist was just called")
 	}
 	callInfo := struct {
+		Ctxt   context.Context
 		Entity weos.AggregateInterface
-		Meta   weos.EventMeta
 	}{
+		Ctxt:   ctxt,
 		Entity: entity,
-		Meta:   meta,
 	}
 	mock.lockPersist.Lock()
 	mock.calls.Persist = append(mock.calls.Persist, callInfo)
 	mock.lockPersist.Unlock()
-	return mock.PersistFunc(entity, meta)
+	return mock.PersistFunc(ctxt, entity)
 }
 
 // PersistCalls gets all the calls that were made to Persist.
 // Check the length with:
 //     len(mockedEventRepository.PersistCalls())
 func (mock *EventRepositoryMock) PersistCalls() []struct {
+	Ctxt   context.Context
 	Entity weos.AggregateInterface
-	Meta   weos.EventMeta
 } {
 	var calls []struct {
+		Ctxt   context.Context
 		Entity weos.AggregateInterface
-		Meta   weos.EventMeta
 	}
 	mock.lockPersist.RLock()
 	calls = mock.calls.Persist

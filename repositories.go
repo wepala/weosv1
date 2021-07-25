@@ -1,12 +1,10 @@
 package weos
 
 import (
-	"database/sql"
 	"encoding/json"
 	"github.com/segmentio/ksuid"
 	"golang.org/x/net/context"
 	"gorm.io/datatypes"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -55,7 +53,7 @@ func NewGormEvent(event *Event) (GormEvent, error) {
 	}, nil
 }
 
-func (e *EventRepositoryGorm) Persist(entity AggregateInterface, meta EventMeta) error {
+func (e *EventRepositoryGorm) Persist(ctxt context.Context, entity AggregateInterface) error {
 	//TODO use the information in the context to get account info, module info. //didn't think it should barf if an empty list is passed
 	var gormEvents []GormEvent
 	entities := entity.GetNewChanges()
@@ -69,10 +67,10 @@ func (e *EventRepositoryGorm) Persist(entity AggregateInterface, meta EventMeta)
 		event := entity.(*Event)
 		//let's fill in meta data if it's not already in the object
 		if event.Meta.User == "" {
-			event.Meta.User = meta.User
+			event.Meta.User = GetUser(ctxt)
 		}
 		if event.Meta.Account == "" {
-			event.Meta.Account = meta.Account
+			event.Meta.Account = GetAccount(ctxt)
 		}
 		if event.Meta.Module == "" {
 			event.Meta.Module = e.ApplicationID
@@ -240,21 +238,6 @@ func (e *EventRepositoryGorm) Remove(entities []Entity) error {
 	}
 
 	return nil
-}
-
-//deprecated
-var NewEventRepositoryWithGORM = func(db *sql.DB, config *gorm.Config, useUnitOfWork bool, logger Log, ctx context.Context, accountID string, applicationID string, userID string, groupID string) (EventRepository, error) {
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: db,
-	}), config)
-	if err != nil {
-		return nil, err
-	}
-	if useUnitOfWork {
-		transaction := gormDB.Begin()
-		return &EventRepositoryGorm{DB: transaction, gormDB: gormDB, logger: logger, unitOfWork: useUnitOfWork, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
-	}
-	return &EventRepositoryGorm{DB: gormDB, logger: logger, AccountID: accountID, GroupID: groupID, ApplicationID: applicationID, UserID: userID}, nil
 }
 
 func NewBasicEventRepository(gormDB *gorm.DB, logger Log, useUnitOfWork bool, accountID string, applicationID string) (EventRepository, error) {
