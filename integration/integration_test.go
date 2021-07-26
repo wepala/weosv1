@@ -1,7 +1,6 @@
 package integration_test
 
 import (
-	"context"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos"
+	"golang.org/x/net/context"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

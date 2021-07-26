@@ -1,9 +1,9 @@
 package weos
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
+	"golang.org/x/net/context"
 	"sync"
 	"time"
 )
