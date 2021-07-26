@@ -116,9 +116,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 	entity := &weos.AggregateRoot{}
 	entity.NewChange(mockEvent)
 
-	err = eventRepository.Persist(entity, weos.EventMeta{
-		Account: "123",
-	})
+	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "123"), entity)
 	if err != nil {
 		t.Fatalf("error encountered persisting event '%s'", err)
 	}
@@ -181,7 +179,7 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 	entity.NewChange(mockEvent2)
 	entity.NewChange(mockEvent3)
 
-	err = eventRepository.Persist(entity, weos.EventMeta{})
+	err = eventRepository.Persist(context.TODO(), entity)
 	if err != nil {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
@@ -224,7 +222,7 @@ func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
 	entity.NewChange(mockEvent2)
 	entity.NewChange(mockEvent3)
 
-	err = eventRepository.Persist(entity, weos.EventMeta{})
+	err = eventRepository.Persist(context.TODO(), entity)
 	if err != nil {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
@@ -259,7 +257,7 @@ func TestSaveAggregateEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to run migrations")
 	}
-	err = eventRepository.Persist(baseAggregate, weos.EventMeta{})
+	err = eventRepository.Persist(context.TODO(), baseAggregate)
 	if err != nil {
 		t.Fatalf("encountered error persiting aggregate events")
 	}
