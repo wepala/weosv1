@@ -1,10 +1,10 @@
 package weos_test
 
 import (
-	"context"
 	"database/sql"
 	_ "github.com/proullon/ramsql/driver"
 	"github.com/wepala/weos"
+	"golang.org/x/net/context"
 	"os"
 	"testing"
 )
@@ -210,7 +210,7 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 		},
 	}
 	mockProjection := &ProjectionMock{
-		GetEventHandlerFunc: func() weos.EventHandler {
+		GetEventHandlerFunc: func(ctx context.Context) weos.EventHandler {
 			return func(event weos.Event) {
 
 			}
@@ -232,7 +232,7 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 		t.Fatalf("unexpected error occured setting up module '%s'", err)
 	}
 
-	err = app.AddProjection(mockProjection)
+	err = app.AddProjection(context.TODO(), mockProjection)
 	if err != nil {
 		t.Fatalf("unexpected error occured setting up projection '%s'", err)
 	}

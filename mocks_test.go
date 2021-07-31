@@ -398,7 +398,7 @@ var _ weos.Projection = &ProjectionMock{}
 //
 // 		// make and configure a mocked weos.Projection
 // 		mockedProjection := &ProjectionMock{
-// 			GetEventHandlerFunc: func() weos.EventHandler {
+// 			GetEventHandlerFunc: func(ctx context.Context) weos.EventHandler {
 // 				panic("mock out the GetEventHandler method")
 // 			},
 // 			MigrateFunc: func(ctx context.Context) error {
@@ -412,7 +412,7 @@ var _ weos.Projection = &ProjectionMock{}
 // 	}
 type ProjectionMock struct {
 	// GetEventHandlerFunc mocks the GetEventHandler method.
-	GetEventHandlerFunc func() weos.EventHandler
+	GetEventHandlerFunc func(ctx context.Context) weos.EventHandler
 
 	// MigrateFunc mocks the Migrate method.
 	MigrateFunc func(ctx context.Context) error
@@ -421,6 +421,8 @@ type ProjectionMock struct {
 	calls struct {
 		// GetEventHandler holds details about calls to the GetEventHandler method.
 		GetEventHandler []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 		// Migrate holds details about calls to the Migrate method.
 		Migrate []struct {
@@ -433,24 +435,29 @@ type ProjectionMock struct {
 }
 
 // GetEventHandler calls GetEventHandlerFunc.
-func (mock *ProjectionMock) GetEventHandler() weos.EventHandler {
+func (mock *ProjectionMock) GetEventHandler(ctx context.Context) weos.EventHandler {
 	if mock.GetEventHandlerFunc == nil {
 		panic("ProjectionMock.GetEventHandlerFunc: method is nil but Projection.GetEventHandler was just called")
 	}
 	callInfo := struct {
-	}{}
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
 	mock.lockGetEventHandler.Lock()
 	mock.calls.GetEventHandler = append(mock.calls.GetEventHandler, callInfo)
 	mock.lockGetEventHandler.Unlock()
-	return mock.GetEventHandlerFunc()
+	return mock.GetEventHandlerFunc(ctx)
 }
 
 // GetEventHandlerCalls gets all the calls that were made to GetEventHandler.
 // Check the length with:
 //     len(mockedProjection.GetEventHandlerCalls())
 func (mock *ProjectionMock) GetEventHandlerCalls() []struct {
+	Ctx context.Context
 } {
 	var calls []struct {
+		Ctx context.Context
 	}
 	mock.lockGetEventHandler.RLock()
 	calls = mock.calls.GetEventHandler

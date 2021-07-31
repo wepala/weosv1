@@ -53,5 +53,5 @@ type Datastore interface {
 
 type Projection interface {
 	Datastore
-	GetEventHandler() EventHandler
+	GetEventHandler(ctx context.Context) EventHandler
 }

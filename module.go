@@ -3,13 +3,13 @@ package weos
 //go:generate moq -out mocks_test.go -pkg weos_test . EventRepository Projection Log Dispatcher Application
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
 	"gorm.io/driver/clickhouse"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -106,10 +106,10 @@ func (w *BaseApplication) DBConnection() *sql.DB {
 	return w.dbConnection
 }
 
-func (w *BaseApplication) AddProjection(projection Projection) error {
+func (w *BaseApplication) AddProjection(ctx context.Context, projection Projection) error {
 	w.projections = append(w.projections, projection)
 	if w.eventRepository != nil {
-		w.eventRepository.AddSubscriber(projection.GetEventHandler())
+		w.eventRepository.AddSubscriber(projection.GetEventHandler(ctx))
 	}
 	return nil
 }
