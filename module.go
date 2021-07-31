@@ -106,10 +106,10 @@ func (w *BaseApplication) DBConnection() *sql.DB {
 	return w.dbConnection
 }
 
-func (w *BaseApplication) AddProjection(ctx context.Context, projection Projection) error {
+func (w *BaseApplication) AddProjection(projection Projection) error {
 	w.projections = append(w.projections, projection)
 	if w.eventRepository != nil {
-		w.eventRepository.AddSubscriber(projection.GetEventHandler(ctx))
+		w.eventRepository.AddSubscriber(projection.GetEventHandler())
 	}
 	return nil
 }

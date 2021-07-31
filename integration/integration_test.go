@@ -109,7 +109,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 
 	//add an event handler
 	eventHandlerCalled := 0
-	eventRepository.AddSubscriber(func(event weos.Event) {
+	eventRepository.AddSubscriber(func(ctx context.Context, event weos.Event) {
 		eventHandlerCalled += 1
 	})
 

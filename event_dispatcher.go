@@ -1,6 +1,7 @@
 package weos
 
 import (
+	"golang.org/x/net/context"
 	"sync"
 )
 
@@ -10,7 +11,7 @@ type EventDisptacher struct {
 	dispatch        sync.Mutex
 }
 
-func (e *EventDisptacher) Dispatch(event Event) {
+func (e *EventDisptacher) Dispatch(ctx context.Context, event Event) {
 	//mutex helps keep state between routines
 	e.dispatch.Lock()
 	defer e.dispatch.Unlock()
@@ -25,7 +26,7 @@ func (e *EventDisptacher) Dispatch(event Event) {
 				}
 				wg.Done()
 			}()
-			handler(event)
+			handler(ctx, event)
 		}()
 	}
 
@@ -40,4 +41,4 @@ func (e *EventDisptacher) GetSubscribers() []EventHandler {
 	return e.handlers
 }
 
-type EventHandler func(event Event)
+type EventHandler func(ctx context.Context, event Event)
