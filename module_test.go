@@ -1,10 +1,10 @@
 package weos_test
 
 import (
-	"context"
 	"database/sql"
 	_ "github.com/proullon/ramsql/driver"
 	"github.com/wepala/weos"
+	"golang.org/x/net/context"
 	"os"
 	"testing"
 )
@@ -211,7 +211,7 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 	}
 	mockProjection := &ProjectionMock{
 		GetEventHandlerFunc: func() weos.EventHandler {
-			return func(event weos.Event) {
+			return func(ctx context.Context, event weos.Event) {
 
 			}
 		},

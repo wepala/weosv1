@@ -105,7 +105,7 @@ func (e *EventRepositoryGorm) Persist(ctxt context.Context, entity AggregateInte
 	entity.Persist()
 
 	for _, entity := range entities {
-		e.eventDispatcher.Dispatch(*entity.(*Event))
+		e.eventDispatcher.Dispatch(ctxt, *entity.(*Event))
 	}
 	return nil
 }
