@@ -110,9 +110,10 @@ func (e *EventRepositoryGorm) Persist(ctxt context.Context, entity AggregateInte
 	return nil
 }
 
+//GetByAggregate get events for a root aggregate
 func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*Event, error) {
 	var events []GormEvent
-	result := e.DB.Order("sequence_no asc").Where("entity_id = ?", ID).Find(&events)
+	result := e.DB.Order("sequence_no asc").Where("root_id = ?", ID).Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -138,9 +139,39 @@ func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*Event, error) {
 	return tevents, nil
 }
 
+//GetByAggregateAndType returns events given the entity id and the entity type.
+//Deprecated: 08/12/2021 This was in theory returning events by entity (not necessarily root aggregate). Upon introducing the RootID
+//events should now be retrieved by root id,entity type and entity id. Use GetByEntityAndAggregate instead
 func (e *EventRepositoryGorm) GetByAggregateAndType(ID string, entityType string) ([]*Event, error) {
 	var events []GormEvent
 	result := e.DB.Order("sequence_no asc").Where("entity_id = ? AND entity_type = ?", ID, entityType).Find(&events)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	var tevents []*Event
+
+	for _, event := range events {
+		tevents = append(tevents, &Event{
+			ID:      event.ID,
+			Type:    event.Type,
+			Payload: json.RawMessage(event.Payload),
+			Meta: EventMeta{
+				EntityID:   event.EntityID,
+				EntityType: event.EntityType,
+				RootID:     event.RootID,
+				Module:     event.ApplicationID,
+				User:       event.User,
+				SequenceNo: event.SequenceNo,
+			},
+			Version: 0,
+		})
+	}
+	return tevents, nil
+}
+func (e *EventRepositoryGorm) GetByEntityAndAggregate(EntityID string, Type string, RootID string) ([]*Event, error) {
+	var events []GormEvent
+	result := e.DB.Order("sequence_no asc").Where("entity_id = ? AND entity_type = ? AND root_id = ?", EntityID, Type, RootID).Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -193,10 +224,12 @@ func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start in
 	return tevents, nil
 }
 
+//AddSubscriber Allows you to add a handler that is triggered when events are dispatched
 func (e *EventRepositoryGorm) AddSubscriber(handler EventHandler) {
 	e.eventDispatcher.AddSubscriber(handler)
 }
 
+//GetSubscribers Get the current list of event subscribers
 func (e *EventRepositoryGorm) GetSubscribers() ([]EventHandler, error) {
 	return e.eventDispatcher.GetSubscribers(), nil
 }

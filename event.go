@@ -15,7 +15,9 @@ type Event struct {
 	errors  []error
 }
 
-var NewBasicEvent = func(eventType string, entityID string, entityType string, payload interface{}) (*Event, error) {
+//NewBasicEvent Create a basic event
+//Deprecated: 08/12/2021 This factory doesn't take into account the Aggregate root which was just introduced. Use NewEntityEvent instead
+func NewBasicEvent(eventType string, entityID string, entityType string, payload interface{}) (*Event, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, NewDomainError("Unable to marshal event payload", eventType, entityID, err)
@@ -33,7 +35,9 @@ var NewBasicEvent = func(eventType string, entityID string, entityType string, p
 	}, nil
 }
 
-var NewAggregateEvent = func(eventType string, entity Entity, payload interface{}) *Event {
+//NewAggregateEvent generates an event on a root aggregate.
+//Deprecated: 08/12/2021 This factory doesn't take into account the Aggregate root which was just introduced. Use NewEntityEvent instead
+func NewAggregateEvent(eventType string, entity Entity, payload interface{}) *Event {
 	payloadBytes, _ := json.Marshal(payload)
 	return &Event{
 		ID:      ksuid.New().String(),
@@ -43,6 +47,24 @@ var NewAggregateEvent = func(eventType string, entity Entity, payload interface{
 		Meta: EventMeta{
 			EntityID:   entity.GetID(),
 			EntityType: GetType(entity),
+			Created:    time.Now().Format(time.RFC3339Nano),
+		},
+	}
+}
+
+//NewEntityEvent Creates an event for an entity within a root aggregate.
+//The rootID is passed in (as opposed to the root entity) to improve developer experience
+func NewEntityEvent(eventType string, entity Entity, rootID string, payload interface{}) *Event {
+	payloadBytes, _ := json.Marshal(payload)
+	return &Event{
+		ID:      ksuid.New().String(),
+		Type:    eventType,
+		Payload: payloadBytes,
+		Version: 1,
+		Meta: EventMeta{
+			EntityID:   entity.GetID(),
+			EntityType: GetType(entity),
+			RootID:     rootID,
 			Created:    time.Now().Format(time.RFC3339Nano),
 		},
 	}

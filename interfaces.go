@@ -2,7 +2,6 @@ package weos
 
 import "golang.org/x/net/context"
 
-//go:generate moq -out mocks_test.go -pkg weos_test . EventRepository
 type WeOSEntity interface {
 	Entity
 	GetUser() User
@@ -41,7 +40,14 @@ type EventRepository interface {
 	Datastore
 	Persist(ctxt context.Context, entity AggregateInterface) error
 	GetByAggregate(ID string) ([]*Event, error)
+	//GetByEntityAndAggregate returns events by entity id and type withing the context of the root aggregate
+	GetByEntityAndAggregate(entityID string, entityType string, rootID string) ([]*Event, error)
+	//GetByAggregateAndType returns events given the entity id and the entity type.
+	//Deprecated: 08/12/2021 This was in theory returning events by entity (not necessarily root aggregate). Upon introducing the RootID
+	//events should now be retrieved by root id,entity type and entity id. Use GetByEntityAndAggregate instead
 	GetByAggregateAndType(ID string, entityType string) ([]*Event, error)
+	//GetByAggregateAndSequenceRange this returns a sequence of events.
+	//Deprecated: 08/17/2021 This isn't actually used and would need to be updated to account for the new RootID property on events
 	GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error)
 	AddSubscriber(handler EventHandler)
 	GetSubscribers() ([]EventHandler, error)
