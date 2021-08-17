@@ -125,7 +125,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		t.Errorf("expected event handlers to be called %d time, called %d times", 1, eventHandlerCalled)
 	}
 
-	rows, err := db.Query("SELECT entity_id,type, account_id,application_id FROM gorm_events WHERE entity_id  = $1", "some id")
+	rows, err := db.Query("SELECT entity_id,type, root_id,application_id FROM gorm_events WHERE entity_id  = $1", "some id")
 	if err != nil {
 		t.Fatalf("error retrieving events '%s'", err)
 	}
@@ -152,6 +152,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
+	gormDB.Where("1 = 1").Unscoped().Delete(weos.GormEvent{})
 	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "123", "456")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
@@ -160,21 +161,24 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
-	mockEvent, _ := weos.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
+	entity := &weos.AggregateRoot{
+		BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"},
+	}
+
+	mockEvent := weos.NewEntityEvent("CREATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"})
 
-	mockEvent2, _ := weos.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
+	mockEvent2 := weos.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
-	mockEvent3, _ := weos.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "BaseAggregate", &struct {
+	mockEvent3 := weos.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
 
-	entity := &weos.AggregateRoot{}
 	entity.NewChange(mockEvent)
 	entity.NewChange(mockEvent2)
 	entity.NewChange(mockEvent3)
@@ -195,6 +199,7 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
+	gormDB.Where("1 = 1").Unscoped().Delete(weos.GormEvent{})
 	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
@@ -203,21 +208,25 @@ func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to run migrations")
 	}
-	mockEvent, _ := weos.NewBasicEvent("CREATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+
+	entity := &weos.AggregateRoot{
+		BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"},
+	}
+
+	mockEvent := weos.NewEntityEvent("CREATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"})
 
-	mockEvent2, _ := weos.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+	mockEvent2 := weos.NewEntityEvent("UPDATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
-	mockEvent3, _ := weos.NewBasicEvent("UPDATE_POST", "1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate", &struct {
+	mockEvent3 := weos.NewEntityEvent("UPDATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
 
-	entity := &weos.AggregateRoot{}
 	entity.NewChange(mockEvent)
 	entity.NewChange(mockEvent2)
 	entity.NewChange(mockEvent3)
@@ -227,7 +236,53 @@ func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
 		t.Fatalf("error encountered persisting events '%s'", err)
 	}
 
-	events, err := eventRepository.GetByAggregateAndType("1iNfR0jYD9UbYocH8D3WK6N4pG9", "OtherAggregate")
+	events, err := eventRepository.GetByAggregateAndType("1iNfR0jYD9UbYocH8D3WK6N4pG9", "AggregateRoot")
+	if err != nil {
+		t.Fatalf("encountered error getting aggregate '%s' error: '%s'", "1iNfR0jYD9UbYocH8D3WK6N4pG9", err)
+	}
+
+	if len(events) != 3 {
+		t.Errorf("expected %d events got %d", 3, len(events))
+	}
+}
+
+func TestEventRepositoryGorm_GetByEntityAndAggregate(t *testing.T) {
+	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
+	if err != nil {
+		t.Fatalf("error creating application '%s'", err)
+	}
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
+	if err != nil {
+		t.Fatalf("failed to run migrations")
+	}
+	entity := &weos.AggregateRoot{
+		BasicEntity: weos.BasicEntity{ID: "1wqoyqIRsZTtnP3wjKh2Mq1Qp03"},
+	}
+
+	mockEvent := weos.NewEntityEvent("CREATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+		Title string `json:"title"`
+	}{Title: "First Post"})
+
+	mockEvent2 := weos.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
+
+	mockEvent3 := weos.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}{Title: "Updated First Post", Description: "Finalizing Post"})
+
+	entity.NewChange(mockEvent)
+	entity.NewChange(mockEvent2)
+	entity.NewChange(mockEvent3)
+
+	err = eventRepository.Persist(context.TODO(), entity)
+	if err != nil {
+		t.Fatalf("error encountered persisting events '%s'", err)
+	}
+
+	events, err := eventRepository.GetByEntityAndAggregate("1wqoyqIRsZTtnP3wjKh2Mq1Qp03", "AggregateRoot", "1iNfR0jYD9UbYocH8D3WK6N4pG9")
 	if err != nil {
 		t.Fatalf("encountered error getting aggregate '%s' error: '%s'", "1iNfR0jYD9UbYocH8D3WK6N4pG9", err)
 	}

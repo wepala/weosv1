@@ -37,6 +37,9 @@ var _ weos.EventRepository = &EventRepositoryMock{}
 // 			GetByAggregateAndTypeFunc: func(ID string, entityType string) ([]*weos.Event, error) {
 // 				panic("mock out the GetByAggregateAndType method")
 // 			},
+// 			GetByEntityAndAggregateFunc: func(entityID string, entityType string, rootID string) ([]*weos.Event, error) {
+// 				panic("mock out the GetByEntityAndAggregate method")
+// 			},
 // 			GetSubscribersFunc: func() ([]weos.EventHandler, error) {
 // 				panic("mock out the GetSubscribers method")
 // 			},
@@ -67,6 +70,9 @@ type EventRepositoryMock struct {
 
 	// GetByAggregateAndTypeFunc mocks the GetByAggregateAndType method.
 	GetByAggregateAndTypeFunc func(ID string, entityType string) ([]*weos.Event, error)
+
+	// GetByEntityAndAggregateFunc mocks the GetByEntityAndAggregate method.
+	GetByEntityAndAggregateFunc func(entityID string, entityType string, rootID string) ([]*weos.Event, error)
 
 	// GetSubscribersFunc mocks the GetSubscribers method.
 	GetSubscribersFunc func() ([]weos.EventHandler, error)
@@ -108,6 +114,15 @@ type EventRepositoryMock struct {
 			// EntityType is the entityType argument value.
 			EntityType string
 		}
+		// GetByEntityAndAggregate holds details about calls to the GetByEntityAndAggregate method.
+		GetByEntityAndAggregate []struct {
+			// EntityID is the entityID argument value.
+			EntityID string
+			// EntityType is the entityType argument value.
+			EntityType string
+			// RootID is the rootID argument value.
+			RootID string
+		}
 		// GetSubscribers holds details about calls to the GetSubscribers method.
 		GetSubscribers []struct {
 		}
@@ -129,6 +144,7 @@ type EventRepositoryMock struct {
 	lockGetByAggregate                 sync.RWMutex
 	lockGetByAggregateAndSequenceRange sync.RWMutex
 	lockGetByAggregateAndType          sync.RWMutex
+	lockGetByEntityAndAggregate        sync.RWMutex
 	lockGetSubscribers                 sync.RWMutex
 	lockMigrate                        sync.RWMutex
 	lockPersist                        sync.RWMutex
@@ -293,6 +309,45 @@ func (mock *EventRepositoryMock) GetByAggregateAndTypeCalls() []struct {
 	mock.lockGetByAggregateAndType.RLock()
 	calls = mock.calls.GetByAggregateAndType
 	mock.lockGetByAggregateAndType.RUnlock()
+	return calls
+}
+
+// GetByEntityAndAggregate calls GetByEntityAndAggregateFunc.
+func (mock *EventRepositoryMock) GetByEntityAndAggregate(entityID string, entityType string, rootID string) ([]*weos.Event, error) {
+	if mock.GetByEntityAndAggregateFunc == nil {
+		panic("EventRepositoryMock.GetByEntityAndAggregateFunc: method is nil but EventRepository.GetByEntityAndAggregate was just called")
+	}
+	callInfo := struct {
+		EntityID   string
+		EntityType string
+		RootID     string
+	}{
+		EntityID:   entityID,
+		EntityType: entityType,
+		RootID:     rootID,
+	}
+	mock.lockGetByEntityAndAggregate.Lock()
+	mock.calls.GetByEntityAndAggregate = append(mock.calls.GetByEntityAndAggregate, callInfo)
+	mock.lockGetByEntityAndAggregate.Unlock()
+	return mock.GetByEntityAndAggregateFunc(entityID, entityType, rootID)
+}
+
+// GetByEntityAndAggregateCalls gets all the calls that were made to GetByEntityAndAggregate.
+// Check the length with:
+//     len(mockedEventRepository.GetByEntityAndAggregateCalls())
+func (mock *EventRepositoryMock) GetByEntityAndAggregateCalls() []struct {
+	EntityID   string
+	EntityType string
+	RootID     string
+} {
+	var calls []struct {
+		EntityID   string
+		EntityType string
+		RootID     string
+	}
+	mock.lockGetByEntityAndAggregate.RLock()
+	calls = mock.calls.GetByEntityAndAggregate
+	mock.lockGetByEntityAndAggregate.RUnlock()
 	return calls
 }
 
