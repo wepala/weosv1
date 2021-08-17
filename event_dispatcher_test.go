@@ -13,7 +13,7 @@ func TestEventDisptacher_Dispatch(t *testing.T) {
 		Meta: weos.EventMeta{
 			EntityID: "some id",
 			Module:   "applicationID",
-			Account:  "accountID",
+			RootID:   "accountID",
 		},
 		Version: 1,
 	}

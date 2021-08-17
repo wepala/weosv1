@@ -125,7 +125,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 		t.Errorf("expected event handlers to be called %d time, called %d times", 1, eventHandlerCalled)
 	}
 
-	rows, err := db.Query("SELECT entity_id,type, account_id,application_id FROM gorm_events WHERE entity_id  = $1", "some id")
+	rows, err := db.Query("SELECT entity_id,type, root_id,application_id FROM gorm_events WHERE entity_id  = $1", "some id")
 	if err != nil {
 		t.Fatalf("error retrieving events '%s'", err)
 	}
