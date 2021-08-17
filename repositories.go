@@ -27,7 +27,7 @@ type GormEvent struct {
 	EntityType    string `gorm:"index"`
 	Payload       datatypes.JSON
 	Type          string `gorm:"index"`
-	AccountID     string `gorm:"index"`
+	RootID        string `gorm:"index"`
 	ApplicationID string `gorm:"index"`
 	User          string `gorm:"index"`
 	SequenceNo    int64
@@ -46,7 +46,7 @@ func NewGormEvent(event *Event) (GormEvent, error) {
 		EntityType:    event.Meta.EntityType,
 		Payload:       payload,
 		Type:          event.Type,
-		AccountID:     event.Meta.Account,
+		RootID:        event.Meta.RootID,
 		ApplicationID: event.Meta.Module,
 		User:          event.Meta.User,
 		SequenceNo:    event.Meta.SequenceNo,
@@ -69,8 +69,8 @@ func (e *EventRepositoryGorm) Persist(ctxt context.Context, entity AggregateInte
 		if event.Meta.User == "" {
 			event.Meta.User = GetUser(ctxt)
 		}
-		if event.Meta.Account == "" {
-			event.Meta.Account = GetAccount(ctxt)
+		if event.Meta.RootID == "" {
+			event.Meta.RootID = GetAccount(ctxt)
 		}
 		if event.Meta.Module == "" {
 			event.Meta.Module = e.ApplicationID
@@ -127,7 +127,7 @@ func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*Event, error) {
 			Meta: EventMeta{
 				EntityID:   event.EntityID,
 				EntityType: event.EntityType,
-				Account:    event.AccountID,
+				RootID:     event.RootID,
 				Module:     event.ApplicationID,
 				User:       event.User,
 				SequenceNo: event.SequenceNo,
@@ -155,7 +155,7 @@ func (e *EventRepositoryGorm) GetByAggregateAndType(ID string, entityType string
 			Meta: EventMeta{
 				EntityID:   event.EntityID,
 				EntityType: event.EntityType,
-				Account:    event.AccountID,
+				RootID:     event.RootID,
 				Module:     event.ApplicationID,
 				User:       event.User,
 				SequenceNo: event.SequenceNo,
@@ -182,7 +182,7 @@ func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start in
 			Meta: EventMeta{
 				EntityID:   event.EntityID,
 				EntityType: event.EntityType,
-				Account:    event.AccountID,
+				RootID:     event.RootID,
 				Module:     event.ApplicationID,
 				User:       event.User,
 				SequenceNo: event.SequenceNo,

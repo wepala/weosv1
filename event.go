@@ -68,10 +68,10 @@ var NewVersionEvent = func(eventType string, entityID string, payload interface{
 type EventMeta struct {
 	EntityID   string `json:"entity_id"`
 	EntityType string `json:"entity_type"`
-	SequenceNo int64  `json:"sequenceNo"`
+	SequenceNo int64  `json:"sequence_no"`
 	User       string `json:"user"`
 	Module     string `json:"module"`
-	Account    string `json:"account"`
+	RootID     string `json:"root_id"`
 	Group      string `json:"group"`
 	Created    string `json:"created"`
 }
