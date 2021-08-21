@@ -213,9 +213,9 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 
 			//update connection string to include authentication IF a username is set
 			if config.Database.User != "" {
-				authEnticationString := fmt.Sprintf("?_auth&_auth_user=%s&_auth_pass=%s&_auth_crypt=sha512",
+				authenticationString := fmt.Sprintf("?_auth&_auth_user=%s&_auth_pass=%s&_auth_crypt=sha512&_foreign_keys=on",
 					config.Database.User, config.Database.Password)
-				connStr = connStr + authEnticationString
+				connStr = connStr + authenticationString
 			}
 		case "sqlserver":
 			connStr = fmt.Sprintf("sqlserver://%s:%s@%s:%s/%s",
