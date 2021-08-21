@@ -258,9 +258,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 	case "sqlite3":
 		gormDB, err = gorm.Open(&sqlite.Dialector{
 			Conn: db,
-		}, &gorm.Config{
-			DisableForeignKeyConstraintWhenMigrating: true,
-		})
+		}, nil)
 		if err != nil {
 			return nil, err
 		}
