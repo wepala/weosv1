@@ -219,6 +219,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 			} else {
 				connStr = connStr + "?_foreign_keys=on"
 			}
+			log.Debugf("sqlite connection string '%s'", connStr)
 		case "sqlserver":
 			connStr = fmt.Sprintf("sqlserver://%s:%s@%s:%s/%s",
 				config.Database.User, config.Database.Password, config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.Database)
