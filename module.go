@@ -213,10 +213,13 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 
 			//update connection string to include authentication IF a username is set
 			if config.Database.User != "" {
-				authEnticationString := fmt.Sprintf("?_auth&_auth_user=%s&_auth_pass=%s&_auth_crypt=sha512",
+				authenticationString := fmt.Sprintf("?_auth&_auth_user=%s&_auth_pass=%s&_auth_crypt=sha512&_foreign_keys=on",
 					config.Database.User, config.Database.Password)
-				connStr = connStr + authEnticationString
+				connStr = connStr + authenticationString
+			} else {
+				connStr = connStr + "?_foreign_keys=on"
 			}
+			log.Debugf("sqlite connection string '%s'", connStr)
 		case "sqlserver":
 			connStr = fmt.Sprintf("sqlserver://%s:%s@%s:%s/%s",
 				config.Database.User, config.Database.Password, config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.Database)
@@ -258,9 +261,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 	case "sqlite3":
 		gormDB, err = gorm.Open(&sqlite.Dialector{
 			Conn: db,
-		}, &gorm.Config{
-			DisableForeignKeyConstraintWhenMigrating: true,
-		})
+		}, nil)
 		if err != nil {
 			return nil, err
 		}
