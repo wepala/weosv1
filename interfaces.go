@@ -1,5 +1,6 @@
 package weos
 
+//go:generate moq -out mocks_test.go . EventRepository WeOSEntity Entity ValueObject EventSourcedEntity Repository UnitOfWorkRepository Datastore
 import "golang.org/x/net/context"
 
 type WeOSEntity interface {
@@ -46,6 +47,7 @@ type EventRepository interface {
 	//Deprecated: 08/12/2021 This was in theory returning events by entity (not necessarily root aggregate). Upon introducing the RootID
 	//events should now be retrieved by root id,entity type and entity id. Use GetByEntityAndAggregate instead
 	GetByAggregateAndType(ID string, entityType string) ([]*Event, error)
+	GetAggregateSequenceNumber(ID string) (int64, error)
 	//GetByAggregateAndSequenceRange this returns a sequence of events.
 	//Deprecated: 08/17/2021 This isn't actually used and would need to be updated to account for the new RootID property on events
 	GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error)
