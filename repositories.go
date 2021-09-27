@@ -2,6 +2,7 @@ package weos
 
 import (
 	"encoding/json"
+
 	"github.com/segmentio/ksuid"
 	"golang.org/x/net/context"
 	"gorm.io/datatypes"
@@ -137,6 +138,7 @@ func (e *EventRepositoryGorm) GetByAggregate(ID string) ([]*Event, error) {
 		})
 	}
 	return tevents, nil
+
 }
 
 //GetByAggregateAndType returns events given the entity id and the entity type.
@@ -169,6 +171,7 @@ func (e *EventRepositoryGorm) GetByAggregateAndType(ID string, entityType string
 	}
 	return tevents, nil
 }
+
 func (e *EventRepositoryGorm) GetByEntityAndAggregate(EntityID string, Type string, RootID string) ([]*Event, error) {
 	var events []GormEvent
 	result := e.DB.Order("sequence_no asc").Where("entity_id = ? AND entity_type = ? AND root_id = ?", EntityID, Type, RootID).Find(&events)
@@ -195,6 +198,16 @@ func (e *EventRepositoryGorm) GetByEntityAndAggregate(EntityID string, Type stri
 		})
 	}
 	return tevents, nil
+}
+
+//GetAggregateSequenceNumber gets the latest sequence number for the aggregate entity
+func (e *EventRepositoryGorm) GetAggregateSequenceNumber(ID string) (int64, error) {
+	var event GormEvent
+	result := e.DB.Order("sequence_no desc").Where("root_id = ?", ID).Find(&event)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return event.SequenceNo, nil
 }
 
 func (e *EventRepositoryGorm) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error) {
