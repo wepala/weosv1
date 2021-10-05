@@ -226,7 +226,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		case "ramsql":
 			connStr = "Testing"
 		case "mysql":
-			connStr = fmt.Sprintf("%s:%s@tcp(%s:%s/%s)",
+			connStr = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
 				config.Database.User, config.Database.Password, config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.Database)
 		case "clickhouse":
 			connStr = fmt.Sprintf("tcp://%s:%s?username=%s&password=%s&database=%s",
@@ -240,7 +240,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 
 		db, err = sql.Open(config.Database.Driver, connStr)
 		if err != nil {
-			logger.Debugf("connection string '%s'", connStr)
+			logger.Errorf("connection string '%s'", connStr)
 			return nil, NewError(fmt.Sprintf("error setting up connection to database '%s'", err), err)
 		}
 
