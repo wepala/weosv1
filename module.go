@@ -240,7 +240,8 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 
 		db, err = sql.Open(config.Database.Driver, connStr)
 		if err != nil {
-			return nil, NewError("error setting up connection to database", err)
+			logger.Debugf("connection string '%s'", connStr)
+			return nil, NewError(fmt.Sprintf("error setting up connection to database '%s'", err), err)
 		}
 
 		db.SetMaxOpenConns(config.Database.MaxOpen)
