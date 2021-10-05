@@ -226,7 +226,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		case "ramsql":
 			connStr = "Testing"
 		case "mysql":
-			connStr = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+			connStr = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?sql_mode='ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'&parseTime=true",
 				config.Database.User, config.Database.Password, config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.Database)
 		case "clickhouse":
 			connStr = fmt.Sprintf("tcp://%s:%s?username=%s&password=%s&database=%s",
