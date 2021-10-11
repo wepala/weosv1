@@ -1,6 +1,8 @@
 package weos
 
-import "fmt"
+import (
+	"fmt"
+)
 
 //Property interface that all fields should implement
 type Property interface {
@@ -54,6 +56,7 @@ func (s *StringProperty) FromLabelAndValue(label string, value string, isRequire
 	s.BasicProperty.Label = label
 	s.Value = value
 	s.BasicProperty.IsRequired = isRequired
+	s.BasicProperty.UI = "textarea"
 	return s
 }
 
@@ -77,6 +80,7 @@ func (b *BooleanProperty) FromLabelAndValue(label string, value bool, isRequired
 	b.BasicProperty.Label = label
 	b.Value = value
 	b.BasicProperty.IsRequired = isRequired
+	b.BasicProperty.UI = "radio"
 	return b
 }
 
@@ -104,6 +108,7 @@ func (n *NumericProperty) FromLabelAndValue(label string, value float32, isRequi
 	n.BasicProperty.Label = label
 	n.Value = value
 	n.BasicProperty.IsRequired = isRequired
+	n.BasicProperty.UI = "textbox"
 	return n
 }
 
@@ -124,3 +129,20 @@ func (e *AmorphousEntity) Set(property Property) {
 	}
 	e.properties[property.GetLabel()] = property
 }
+
+/*
+func FromJSON(entity []byte) *[]Property {
+	var ampEntity *AmorphousEntity
+	json.Unmarshal(entity, ampEntity)
+
+	props := make([]Property, len(ampEntity.properties))
+
+	for k, _ := range ampEntity.properties {
+		if ampEntity.properties[k].GetType() == "string" {
+			stringProp := ampEntity.properties[k]
+			props = append(props, stringProp)
+		}
+	}
+	return &props
+}
+*/

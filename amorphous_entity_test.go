@@ -1,6 +1,7 @@
 package weos_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/wepala/weos"
@@ -60,6 +61,27 @@ func TestAmorphousEntity_NumericProperty(t *testing.T) {
 		property := admin.Get("amount")
 		if property.IsValid() {
 			t.Fatalf("expected '%s' property to be invalid", property.GetLabel())
+		}
+	})
+}
+
+func TestAmorphousEntity_DeserializeJSON(t *testing.T) {
+	admin := new(user)
+	stringProp := &weos.StringProperty{}
+
+	t.Run("test deserialize", func(t *testing.T) {
+		admin.Set(new(weos.StringProperty).FromLabelAndValue("FirstName", "Eric", false))
+
+		property := admin.Get("FirstName")
+
+		marshalProp, _ := json.Marshal(property)
+		_ = json.Unmarshal(marshalProp, stringProp)
+
+		if stringProp.Type != "string" {
+			t.Errorf("expected type to be '%s', got '%s'", "string", stringProp.Type)
+		}
+		if stringProp.Value != "Eric" {
+			t.Errorf("expected value to be '%s', got '%s'", "Eric", stringProp.Value)
 		}
 	})
 }
