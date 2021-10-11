@@ -29,3 +29,17 @@ func TestAmorphousEntity_StringProperty(t *testing.T) {
 		}
 	})
 }
+
+func TestAmorphousEntity_BooleanProperty(t *testing.T) {
+	admin := new(user)
+	t.Run("add property", func(t *testing.T) {
+		admin.Set(new(weos.BooleanProperty).FromLabelAndValue("is trinidadian", true, false))
+		property := admin.Get("FirstName")
+		if property.GetType() != "boolean" {
+			t.Errorf("expected type to be '%s', got '%s'", "boolean", property.GetType())
+		}
+		if property.(*weos.BooleanProperty).Value {
+			t.Errorf("expected '%s' to be true", property.GetLabel())
+		}
+	})
+}
