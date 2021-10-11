@@ -109,18 +109,18 @@ func (n *NumericProperty) FromLabelAndValue(label string, value float32, isRequi
 
 type AmorphousEntity struct {
 	*BasicEntity
-	Properties map[string]Property `json:"properties"`
+	properties map[string]Property `json:"properties"`
 }
 
 func (e *AmorphousEntity) Get(label string) Property {
-	return e.Properties[label]
+	return e.properties[label]
 }
 func (e *AmorphousEntity) Set(property Property) {
 	if e == nil {
 		e = &AmorphousEntity{}
 	}
-	if e.Properties == nil {
-		e.Properties = make(map[string]Property)
+	if e.properties == nil {
+		e.properties = make(map[string]Property)
 	}
-	e.Properties[property.GetLabel()] = property
+	e.properties[property.GetLabel()] = property
 }
