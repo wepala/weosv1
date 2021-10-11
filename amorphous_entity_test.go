@@ -7,14 +7,11 @@ import (
 )
 
 type user struct {
-	*weos.AmorphousEntity
+	weos.AmorphousEntity
 }
 
 func TestAmorphousEntity_StringProperty(t *testing.T) {
 	admin := new(user)
-	if admin.AmorphousEntity == nil {
-		admin.AmorphousEntity = &weos.AmorphousEntity{}
-	}
 	t.Run("add property", func(t *testing.T) {
 		admin.Set(new(weos.StringProperty).FromLabelAndValue("FirstName", "Eric", false))
 		property := admin.Get("FirstName")
@@ -35,9 +32,6 @@ func TestAmorphousEntity_StringProperty(t *testing.T) {
 }
 func TestAmorphousEntity_BooleanProperty(t *testing.T) {
 	admin := new(user)
-	if admin.AmorphousEntity == nil {
-		admin.AmorphousEntity = &weos.AmorphousEntity{}
-	}
 	t.Run("add property", func(t *testing.T) {
 		admin.Set(new(weos.BooleanProperty).FromLabelAndValue("is trinidadian", true, false))
 		property := admin.Get("is trinidadian")
@@ -51,9 +45,6 @@ func TestAmorphousEntity_BooleanProperty(t *testing.T) {
 }
 func TestAmorphousEntity_NumericProperty(t *testing.T) {
 	admin := new(user)
-	if admin.AmorphousEntity == nil {
-		admin.AmorphousEntity = &weos.AmorphousEntity{}
-	}
 	t.Run("add property", func(t *testing.T) {
 		admin.Set(new(weos.NumericProperty).FromLabelAndValue("amount", 100, false))
 		property := admin.Get("amount")
