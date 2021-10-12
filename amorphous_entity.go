@@ -1,6 +1,7 @@
 package weos
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -130,19 +131,44 @@ func (e *AmorphousEntity) Set(property Property) {
 	e.properties[property.GetLabel()] = property
 }
 
-/*
-func FromJSON(entity []byte) *[]Property {
+//Umarshall AmorphousEntity into interface provided
+func Unmarshal(data []byte, v interface{}) error {
 	var ampEntity *AmorphousEntity
-	json.Unmarshal(entity, ampEntity)
+	json.Unmarshal(data, ampEntity)
+	entity := v.(*AmorphousEntity)
+	entity = &AmorphousEntity{BasicEntity: ampEntity.BasicEntity}
 
-	props := make([]Property, len(ampEntity.properties))
-
-	for k, _ := range ampEntity.properties {
-		if ampEntity.properties[k].GetType() == "string" {
-			stringProp := ampEntity.properties[k]
-			props = append(props, stringProp)
+	for _, prop := range ampEntity.properties {
+		if prop.GetType() == "string" {
+			stringProp := &StringProperty{}
+			stringProp.FromJSON(prop)
+			entity.properties[prop.GetLabel()] = stringProp
+		}
+		if prop.GetType() == "boolean" {
+			booleanProp := &BooleanProperty{}
+			booleanProp.FromJSON(prop)
+			entity.properties[prop.GetLabel()] = booleanProp
+		}
+		if prop.GetType() == "numeric" {
+			numericProp := &NumericProperty{}
+			numericProp.FromJSON(prop)
+			entity.properties[prop.GetLabel()] = numericProp
 		}
 	}
-	return &props
+	v = entity
+
+	return nil
 }
-*/
+
+func (s *StringProperty) FromJSON(prop Property) {
+	s = prop.(*StringProperty)
+
+}
+
+func (n *NumericProperty) FromJSON(prop Property) {
+	n = prop.(*NumericProperty)
+}
+
+func (b *BooleanProperty) FromJSON(prop Property) {
+	b = prop.(*BooleanProperty)
+}

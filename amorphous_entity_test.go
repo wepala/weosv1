@@ -67,21 +67,39 @@ func TestAmorphousEntity_NumericProperty(t *testing.T) {
 
 func TestAmorphousEntity_DeserializeJSON(t *testing.T) {
 	admin := new(user)
-	stringProp := &weos.StringProperty{}
+	ampEntity := &weos.AmorphousEntity{BasicEntity: &weos.BasicEntity{ID: "124Test"}}
 
 	t.Run("test deserialize", func(t *testing.T) {
 		admin.Set(new(weos.StringProperty).FromLabelAndValue("FirstName", "Eric", false))
+		admin.Set(new(weos.BooleanProperty).FromLabelAndValue("isTrue", true, false))
+		admin.Set(new(weos.NumericProperty).FromLabelAndValue("amount", 200, false))
+
+		temp := &admin.AmorphousEntity
+		marshall, err := json.Marshal(temp)
+		if err != nil {
+			t.Errorf("Unexpected err marshalling amorphous entity, '%s'", err)
+		}
+		err = weos.Unmarshal(marshall, ampEntity)
+		if err != nil {
+			t.Errorf("Unexpected err unmarshalling amorphous entity, '%s'", err)
+		}
 
 		property := admin.Get("FirstName")
 
-		marshalProp, _ := json.Marshal(property)
-		_ = json.Unmarshal(marshalProp, stringProp)
-
-		if stringProp.Type != "string" {
-			t.Errorf("expected type to be '%s', got '%s'", "string", stringProp.Type)
+		if property.GetLabel() != "FirstName" {
+			t.Errorf("expected first property label to be '%s', got '%s'", "FirstName", property.GetLabel())
 		}
-		if stringProp.Value != "Eric" {
-			t.Errorf("expected value to be '%s', got '%s'", "Eric", stringProp.Value)
+
+		property = admin.Get("isTrue")
+
+		if property.GetLabel() != "FirstName" {
+			t.Errorf("expected second property label to be '%s', got '%s'", "isTrue", property.GetLabel())
+		}
+
+		property = admin.Get("amount")
+
+		if property.GetLabel() != "FirstName" {
+			t.Errorf("expected second property label to be '%s', got '%s'", "amount", property.GetLabel())
 		}
 	})
 }
