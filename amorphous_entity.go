@@ -5,6 +5,9 @@ import (
 	"fmt"
 )
 
+const SINGLELINE = "singleLine"
+const CHECKBOX = "checkbox"
+
 //Property interface that all fields should implement
 type Property interface {
 	IsValid() bool
@@ -49,7 +52,7 @@ func (s *StringProperty) IsValid() bool {
 }
 
 //FromLabelAndValue create property using label
-func (s *StringProperty) FromLabelAndValue(label string, value string, isRequired bool) *StringProperty {
+func (s *StringProperty) FromLabelAndValue(label string, value string, isRequired bool, ui string) *StringProperty {
 	if s.BasicProperty == nil {
 		s.BasicProperty = &BasicProperty{}
 	}
@@ -57,7 +60,13 @@ func (s *StringProperty) FromLabelAndValue(label string, value string, isRequire
 	s.BasicProperty.Label = label
 	s.Value = value
 	s.BasicProperty.IsRequired = isRequired
-	s.BasicProperty.UI = "textarea"
+
+	if ui == "" {
+		s.BasicProperty.UI = SINGLELINE //Sets default
+	} else {
+		s.BasicProperty.UI = ui
+	}
+
 	return s
 }
 
@@ -73,7 +82,7 @@ func (b *BooleanProperty) IsValid() bool {
 }
 
 //FromLabelAndValue create property using label
-func (b *BooleanProperty) FromLabelAndValue(label string, value bool, isRequired bool) *BooleanProperty {
+func (b *BooleanProperty) FromLabelAndValue(label string, value bool, isRequired bool, ui string) *BooleanProperty {
 	if b.BasicProperty == nil {
 		b.BasicProperty = &BasicProperty{}
 	}
@@ -81,7 +90,13 @@ func (b *BooleanProperty) FromLabelAndValue(label string, value bool, isRequired
 	b.BasicProperty.Label = label
 	b.Value = value
 	b.BasicProperty.IsRequired = isRequired
-	b.BasicProperty.UI = "radio"
+
+	if ui == "" {
+		b.BasicProperty.UI = CHECKBOX //Sets default
+	} else {
+		b.BasicProperty.UI = ui
+	}
+
 	return b
 }
 
@@ -101,7 +116,7 @@ func (n *NumericProperty) IsValid() bool {
 }
 
 //FromLabelAndValue create property using label
-func (n *NumericProperty) FromLabelAndValue(label string, value float32, isRequired bool) *NumericProperty {
+func (n *NumericProperty) FromLabelAndValue(label string, value float32, isRequired bool, ui string) *NumericProperty {
 	if n.BasicProperty == nil {
 		n.BasicProperty = &BasicProperty{}
 	}
@@ -109,7 +124,13 @@ func (n *NumericProperty) FromLabelAndValue(label string, value float32, isRequi
 	n.BasicProperty.Label = label
 	n.Value = value
 	n.BasicProperty.IsRequired = isRequired
-	n.BasicProperty.UI = "textbox"
+
+	if ui == "" {
+		n.BasicProperty.UI = SINGLELINE //Sets default
+	} else {
+		n.BasicProperty.UI = ui
+	}
+
 	return n
 }
 
