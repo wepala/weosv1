@@ -3,11 +3,11 @@ package weos
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 )
 
 const UI_SINGLE_LINE = "singleLine"
 const UI_CHECKBOX = "checkbox"
+const UI_MULTI_LINE = "multiLine"
 
 //Property interface that all fields should implement
 type Property interface {
@@ -138,98 +138,119 @@ func (e *AmorphousEntity) Set(property Property) {
 	e.Properties[property.GetLabel()] = property
 }
 
-/*
 //Umarshall AmorphousEntity into interface provided
 func (e *AmorphousEntity) UnmarshalJSON(data []byte) error {
 
-	for _, prop := range data {
-		if string(prop) == "string" {
-			stringProp := new(StringProperty).FromJSON(data)
-			e.Properties[stringProp.GetLabel()] = stringProp
+	var v map[string]interface{}
+	json.Unmarshal(data, &v)
+
+	newProperty := make(map[string]interface{})
+	newProperty = v["properties"].(map[string]interface{})
+	if len(newProperty) == 0 {
+		return nil
+	}
+
+	for _, prop := range newProperty {
+		currProp := make(map[string]interface{})
+		currProp = prop.(map[string]interface{})
+
+		currPropType := currProp["type"].(string)
+
+		if currPropType == "string" {
+			stringProp := new(StringProperty).FromJSON(currProp) //add if statement for nil
+			if stringProp != nil {
+				if e.Properties == nil {
+					e.Properties = make(map[string]Property)
+				}
+				e.Properties[stringProp.GetLabel()] = stringProp
+			}
 		}
-		if string(prop) == "boolean" {
-			booleanProp := new(BooleanProperty).FromJSON(data)
-			e.Properties[booleanProp.GetLabel()] = booleanProp
+		if currPropType == "boolean" {
+			booleanProp := new(BooleanProperty).FromJSON(currProp)
+			if booleanProp != nil {
+				if e.Properties == nil {
+					e.Properties = make(map[string]Property)
+				}
+				e.Properties[booleanProp.GetLabel()] = booleanProp
+			}
 		}
-		if string(prop) == "numeric" {
-			numericProp := new(NumericProperty).FromJSON(data)
-			e.Properties[numericProp.GetLabel()] = numericProp
+		if currPropType == "numeric" {
+			numericProp := new(NumericProperty).FromJSON(currProp)
+			if numericProp != nil {
+				if e.Properties == nil {
+					e.Properties = make(map[string]Property)
+				}
+				e.Properties[numericProp.GetLabel()] = numericProp
+			}
 		}
 	}
 
 	return nil
 }
 
-func (s *StringProperty) FromJSON(prop []byte) *StringProperty {
-	json.Unmarshal(prop, s)
+func (s *StringProperty) FromJSON(prop map[string]interface{}) *StringProperty {
+	if len(prop) == 0 {
+		return nil
+	}
+
+	if s.BasicProperty == nil {
+		s.BasicProperty = &BasicProperty{}
+	}
+
+	s.BasicProperty.Type = prop["type"].(string)
+	s.BasicProperty.Label = prop["label"].(string)
+	s.Value = prop["value"].(string)
+	s.BasicProperty.IsRequired = prop["is_required"].(bool)
+
+	if prop["ui"].(string) == "" {
+		s.BasicProperty.UI = UI_SINGLE_LINE
+	} else {
+		s.BasicProperty.UI = prop["ui"].(string)
+	}
 	return s
 }
 
-func (b *BooleanProperty) FromJSON(prop []byte) *BooleanProperty {
-	return nil
-}
-
-func (n *NumericProperty) FromJSON(prop []byte) *NumericProperty {
-	return nil
-
-}
-*/
-
-func (e *AmorphousEntity) UnmarshalJSON(data []byte) error {
-	value, err := UnmarshalCustomValue(data, "id", "properties", map[string]reflect.Type{
-		"string":  reflect.TypeOf(StringProperty{}),
-		"boolean": reflect.TypeOf(BooleanProperty{}),
-		"numeric": reflect.TypeOf(NumericProperty{}),
-	})
-	if err != nil {
-		return err
+func (b *BooleanProperty) FromJSON(prop map[string]interface{}) *BooleanProperty {
+	if len(prop) == 0 {
+		return nil
 	}
 
-	e.Properties = value
-
-	return nil
-
-}
-
-func UnmarshalCustomValue(data []byte, idJsonField, propertiesJsonField string, customTypes map[string]reflect.Type) (map[string]Property, error) {
-	m := map[string]interface{}{}
-	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, err
+	if b.BasicProperty == nil {
+		b.BasicProperty = &BasicProperty{}
 	}
 
-	ID := m[idJsonField].(string)
+	b.BasicProperty.Type = prop["type"].(string)
+	b.BasicProperty.Label = prop["label"].(string)
+	b.Value = prop["value"].(bool)
+	b.BasicProperty.IsRequired = prop["is_required"].(bool)
 
-	var value map[string]Property
-	for i := 0; i <= len(m); i++ {
-		if ty, found := customTypes[ID]; found {
-			value = reflect.New(ty).Interface().(map[string]Property)
-		}
+	if prop["ui"].(string) == "" {
+		b.BasicProperty.UI = UI_CHECKBOX
+	} else {
+		b.BasicProperty.UI = prop["ui"].(string)
+	}
+	return b
+}
 
-		valueBytes, err := json.Marshal(m[propertiesJsonField])
-		if err != nil {
-			return nil, err
-		}
-
-		if propertiesJsonField == "string" {
-			stringProp := new(StringProperty).FromJSON(data)
-			value = stringProp
-		}
-
+func (n *NumericProperty) FromJSON(prop map[string]interface{}) *NumericProperty {
+	if len(prop) == 0 {
+		return nil
 	}
 
-	return value, nil
-}
+	if n.BasicProperty == nil {
+		n.BasicProperty = &BasicProperty{}
+	}
 
-func (s *StringProperty) FromJSON(prop []byte) *StringProperty {
-	json.Unmarshal(prop, s)
-	return s
-}
+	n.BasicProperty.Type = prop["type"].(string)
+	n.BasicProperty.Label = prop["label"].(string)
+	n.Value = float32(prop["value"].(float64))
+	n.BasicProperty.IsRequired = prop["is_required"].(bool)
 
-func (b *BooleanProperty) FromJSON(prop []byte) *BooleanProperty {
-	return nil
-}
-
-func (n *NumericProperty) FromJSON(prop []byte) *NumericProperty {
-	return nil
+	if prop["ui"].(string) == "" {
+		n.BasicProperty.UI = UI_SINGLE_LINE
+	} else {
+		n.BasicProperty.UI = prop["ui"].(string)
+	}
+	return n
 
 }

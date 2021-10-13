@@ -81,17 +81,27 @@ func TestAmorphousEntity_DeserializeJSON(t *testing.T) {
 		admin.Set(new(weos.StringProperty).FromLabelAndValue("FirstName", "Eric", false))
 		admin.Set(new(weos.BooleanProperty).FromLabelAndValue("isTrue", true, false))
 		admin.Set(new(weos.NumericProperty).FromLabelAndValue("amount", 200, false))
+		admin.Set(new(weos.NumericProperty).FromLabelAndValue("decimalAmount", 100.10, false))
 
-		marshall, err := json.Marshal(admin.AmorphousEntity)
+		marshall, err := json.Marshal(&admin)
 		if err != nil {
 			t.Errorf("Unexpected err marshalling amorphous entity, '%s'", err)
 		}
 
 		var someUser user
-		json.Unmarshal(marshall, &someUser.AmorphousEntity)
+		json.Unmarshal(marshall, &someUser)
 
 		if someUser.Get("FirstName").(*weos.StringProperty).Value != "Eric" {
-			t.Errorf("some user was not unmarshalled correctly")
+			t.Errorf("expected value to be '%s', got '%s'", "Eric", someUser.Get("FirstName").(*weos.StringProperty).Value)
+		}
+		if someUser.Get("isTrue").(*weos.BooleanProperty).Value != true {
+			t.Errorf("expected value to be '%t', got '%t'", true, someUser.Get("isTrue").(*weos.BooleanProperty).Value)
+		}
+		if someUser.Get("amount").(*weos.NumericProperty).Value != 200 {
+			t.Errorf("expected value to be '%d', got '%f'", 200, someUser.Get("amount").(*weos.NumericProperty).Value)
+		}
+		if someUser.Get("decimalAmount").(*weos.NumericProperty).Value != 100.10 {
+			t.Errorf("expected value to be '%f', got '%f'", 100.10, someUser.Get("decimalAmount").(*weos.NumericProperty).Value)
 		}
 	})
 }
