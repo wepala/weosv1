@@ -142,22 +142,22 @@ func (e *AmorphousEntity) Set(property Property) {
 func (e *AmorphousEntity) UnmarshalJSON(data []byte) error {
 
 	var v map[string]interface{}
-	json.Unmarshal(data, &v)
+	json.Unmarshal(data, &v) //Saves all the data in a interface map
 
 	newProperty := make(map[string]interface{})
-	newProperty = v["properties"].(map[string]interface{})
+	newProperty = v["properties"].(map[string]interface{}) //Extracts the property map from the interface map
 	if len(newProperty) == 0 {
 		return nil
 	}
 
-	for _, prop := range newProperty {
+	for _, prop := range newProperty { //Iterates through the individual properties within the property map
 		currProp := make(map[string]interface{})
-		currProp = prop.(map[string]interface{})
+		currProp = prop.(map[string]interface{}) //Extracts the current property
 
-		currPropType := currProp["type"].(string)
+		currPropType := currProp["type"].(string) //Asserts the current property type to string and saves it for comparison
 
 		if currPropType == "string" {
-			stringProp := new(StringProperty).FromJSON(currProp) //add if statement for nil
+			stringProp := new(StringProperty).FromJSON(currProp)
 			if stringProp != nil {
 				if e.Properties == nil {
 					e.Properties = make(map[string]Property)
