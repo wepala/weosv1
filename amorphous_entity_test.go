@@ -82,14 +82,13 @@ func TestAmorphousEntity_DeserializeJSON(t *testing.T) {
 		admin.Set(new(weos.BooleanProperty).FromLabelAndValue("isTrue", true, false))
 		admin.Set(new(weos.NumericProperty).FromLabelAndValue("amount", 200, false))
 
-		temp := &admin.AmorphousEntity
-		marshall, err := json.Marshal(temp)
+		marshall, err := json.Marshal(admin.AmorphousEntity)
 		if err != nil {
 			t.Errorf("Unexpected err marshalling amorphous entity, '%s'", err)
 		}
 
 		var someUser user
-		json.Unmarshal(marshall, &someUser)
+		json.Unmarshal(marshall, &someUser.AmorphousEntity)
 
 		if someUser.Get("FirstName").(*weos.StringProperty).Value != "Eric" {
 			t.Errorf("some user was not unmarshalled correctly")

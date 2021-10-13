@@ -3,6 +3,7 @@ package weos
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 const UI_SINGLE_LINE = "singleLine"
@@ -121,57 +122,114 @@ func (n *NumericProperty) FromLabelAndValue(label string, value float32, isRequi
 
 type AmorphousEntity struct {
 	*BasicEntity
-	properties map[string]Property `json:"properties"`
+	Properties map[string]Property `json:"properties"`
 }
 
 func (e *AmorphousEntity) Get(label string) Property {
-	return e.properties[label]
+	return e.Properties[label]
 }
 func (e *AmorphousEntity) Set(property Property) {
 	if e == nil {
 		e = &AmorphousEntity{}
 	}
-	if e.properties == nil {
-		e.properties = make(map[string]Property)
+	if e.Properties == nil {
+		e.Properties = make(map[string]Property)
 	}
-	e.properties[property.GetLabel()] = property
+	e.Properties[property.GetLabel()] = property
 }
 
+/*
 //Umarshall AmorphousEntity into interface provided
 func (e *AmorphousEntity) UnmarshalJSON(data []byte) error {
-	ampEntity := struct {
-		Properties map[string]Property
-	}{}
-	json.Unmarshal(data, &ampEntity)
 
-	for _, prop := range ampEntity.properties {
-		if prop.GetType() == "string" {
-			stringProp := new(StringProperty).FromJSON(prop)
-			e.properties[prop.GetLabel()] = stringProp
+	for _, prop := range data {
+		if string(prop) == "string" {
+			stringProp := new(StringProperty).FromJSON(data)
+			e.Properties[stringProp.GetLabel()] = stringProp
 		}
-		if prop.GetType() == "boolean" {
-			booleanProp := new(BooleanProperty).FromJSON(prop)
-			e.properties[prop.GetLabel()] = booleanProp
+		if string(prop) == "boolean" {
+			booleanProp := new(BooleanProperty).FromJSON(data)
+			e.Properties[booleanProp.GetLabel()] = booleanProp
 		}
-		if prop.GetType() == "numeric" {
-			numericProp := new(NumericProperty).FromJSON(prop)
-			entity.properties[prop.GetLabel()] = numericProp
+		if string(prop) == "numeric" {
+			numericProp := new(NumericProperty).FromJSON(data)
+			e.Properties[numericProp.GetLabel()] = numericProp
 		}
 	}
-	v = entity
 
 	return nil
 }
 
-func (s *StringProperty) FromJSON(prop Property) *StringProperty {
-	return prop.(*StringProperty)
+func (s *StringProperty) FromJSON(prop []byte) *StringProperty {
+	json.Unmarshal(prop, s)
+	return s
 }
 
-func (b *BooleanProperty) FromJSON(prop Property) *BooleanProperty {
-	return prop.(*BooleanProperty)
+func (b *BooleanProperty) FromJSON(prop []byte) *BooleanProperty {
+	return nil
 }
 
-func (n *NumericProperty) FromJSON(prop Property) *NumericProperty {
-	return prop.(*NumericProperty)
+func (n *NumericProperty) FromJSON(prop []byte) *NumericProperty {
+	return nil
+
+}
+*/
+
+func (e *AmorphousEntity) UnmarshalJSON(data []byte) error {
+	value, err := UnmarshalCustomValue(data, "id", "properties", map[string]reflect.Type{
+		"string":  reflect.TypeOf(StringProperty{}),
+		"boolean": reflect.TypeOf(BooleanProperty{}),
+		"numeric": reflect.TypeOf(NumericProperty{}),
+	})
+	if err != nil {
+		return err
+	}
+
+	e.Properties = value
+
+	return nil
+
+}
+
+func UnmarshalCustomValue(data []byte, idJsonField, propertiesJsonField string, customTypes map[string]reflect.Type) (map[string]Property, error) {
+	m := map[string]interface{}{}
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil, err
+	}
+
+	ID := m[idJsonField].(string)
+
+	var value map[string]Property
+	for i := 0; i <= len(m); i++ {
+		if ty, found := customTypes[ID]; found {
+			value = reflect.New(ty).Interface().(map[string]Property)
+		}
+
+		valueBytes, err := json.Marshal(m[propertiesJsonField])
+		if err != nil {
+			return nil, err
+		}
+
+		if propertiesJsonField == "string" {
+			stringProp := new(StringProperty).FromJSON(data)
+			value = stringProp
+		}
+
+	}
+
+	return value, nil
+}
+
+func (s *StringProperty) FromJSON(prop []byte) *StringProperty {
+	json.Unmarshal(prop, s)
+	return s
+}
+
+func (b *BooleanProperty) FromJSON(prop []byte) *BooleanProperty {
+	return nil
+}
+
+func (n *NumericProperty) FromJSON(prop []byte) *NumericProperty {
+	return nil
 
 }
