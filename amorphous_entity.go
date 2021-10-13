@@ -138,20 +138,20 @@ func (e *AmorphousEntity) Set(property Property) {
 }
 
 //Umarshall AmorphousEntity into interface provided
-func Unmarshal(data []byte, v interface{}) error {
-	var ampEntity *AmorphousEntity
-	json.Unmarshal(data, ampEntity)
-	entity := v.(*AmorphousEntity)
-	entity = &AmorphousEntity{BasicEntity: ampEntity.BasicEntity}
+func (e *AmorphousEntity) UnmarshalJSON(data []byte) error {
+	ampEntity := struct {
+		Properties map[string]Property
+	}{}
+	json.Unmarshal(data, &ampEntity)
 
 	for _, prop := range ampEntity.properties {
 		if prop.GetType() == "string" {
 			stringProp := new(StringProperty).FromJSON(prop)
-			entity.properties[prop.GetLabel()] = stringProp
+			e.properties[prop.GetLabel()] = stringProp
 		}
 		if prop.GetType() == "boolean" {
 			booleanProp := new(BooleanProperty).FromJSON(prop)
-			entity.properties[prop.GetLabel()] = booleanProp
+			e.properties[prop.GetLabel()] = booleanProp
 		}
 		if prop.GetType() == "numeric" {
 			numericProp := new(NumericProperty).FromJSON(prop)
