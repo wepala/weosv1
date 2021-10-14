@@ -97,7 +97,7 @@ func (e *EventRepositoryGorm) Persist(ctxt context.Context, entity AggregateInte
 		}
 		gormEvents = append(gormEvents, gormEvent)
 	}
-	db := e.DB.CreateInBatches(gormEvents, 200)
+	db := e.DB.CreateInBatches(gormEvents, 2000)
 	if db.Error != nil {
 		return db.Error
 	}

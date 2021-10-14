@@ -337,10 +337,10 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 		t.Fatalf("error setting up application'%s'", err)
 	}
 
-	generateEvents := make([]*weos.Event, 2000)
+	generateEvents := make([]*weos.Event, 20000)
 	entity := &weos.AggregateRoot{}
 
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 20000; i++ {
 
 		currValue := strconv.Itoa(i)
 
@@ -376,7 +376,7 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 		t.Fatalf("error encountered persisting event '%s'", err)
 	}
 
-	if eventHandlerCalled != 2000 {
+	if eventHandlerCalled != 20000 {
 		t.Errorf("expected event handlers to be called %d time, called %d times", 2000, eventHandlerCalled)
 	}
 
@@ -385,7 +385,7 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 		t.Fatalf("error retrieving events '%s'", err)
 	}
 
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 20000; i++ {
 		for rows.Next() {
 			var eventType, entityID, accountID, applicationID string
 			err = rows.Scan(&entityID, &eventType, &accountID, &applicationID)
