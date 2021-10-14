@@ -39,7 +39,7 @@ func (b *BasicProperty) GetErrors() []error {
 
 //StringProperty basic string property
 type StringProperty struct {
-	*BasicProperty
+	BasicProperty
 	Value string `json:"value"`
 }
 
@@ -54,9 +54,7 @@ func (s *StringProperty) IsValid() bool {
 
 //FromLabelAndValue create property using label
 func (s *StringProperty) FromLabelAndValue(label string, value string, isRequired bool) *StringProperty {
-	if s.BasicProperty == nil {
-		s.BasicProperty = &BasicProperty{}
-	}
+
 	s.BasicProperty.Type = "string"
 	s.BasicProperty.Label = label
 	s.Value = value
@@ -68,7 +66,7 @@ func (s *StringProperty) FromLabelAndValue(label string, value string, isRequire
 
 //BooleanProperty basic string property
 type BooleanProperty struct {
-	*BasicProperty
+	BasicProperty
 	Value bool `json:"value"`
 }
 
@@ -79,9 +77,7 @@ func (b *BooleanProperty) IsValid() bool {
 
 //FromLabelAndValue create property using label
 func (b *BooleanProperty) FromLabelAndValue(label string, value bool, isRequired bool) *BooleanProperty {
-	if b.BasicProperty == nil {
-		b.BasicProperty = &BasicProperty{}
-	}
+
 	b.BasicProperty.Type = "boolean"
 	b.BasicProperty.Label = label
 	b.Value = value
@@ -93,7 +89,7 @@ func (b *BooleanProperty) FromLabelAndValue(label string, value bool, isRequired
 
 //NumericProperty basic string property
 type NumericProperty struct {
-	*BasicProperty
+	BasicProperty
 	Value float32 `json:"value"`
 }
 
@@ -108,9 +104,7 @@ func (n *NumericProperty) IsValid() bool {
 
 //FromLabelAndValue create property using label
 func (n *NumericProperty) FromLabelAndValue(label string, value float32, isRequired bool) *NumericProperty {
-	if n.BasicProperty == nil {
-		n.BasicProperty = &BasicProperty{}
-	}
+
 	n.BasicProperty.Type = "numeric"
 	n.BasicProperty.Label = label
 	n.Value = value
@@ -193,10 +187,6 @@ func (s *StringProperty) FromJSON(prop map[string]interface{}) *StringProperty {
 		return nil
 	}
 
-	if s.BasicProperty == nil {
-		s.BasicProperty = &BasicProperty{}
-	}
-
 	s.BasicProperty.Type = prop["type"].(string)
 	s.BasicProperty.Label = prop["label"].(string)
 	s.Value = prop["value"].(string)
@@ -215,10 +205,6 @@ func (b *BooleanProperty) FromJSON(prop map[string]interface{}) *BooleanProperty
 		return nil
 	}
 
-	if b.BasicProperty == nil {
-		b.BasicProperty = &BasicProperty{}
-	}
-
 	b.BasicProperty.Type = prop["type"].(string)
 	b.BasicProperty.Label = prop["label"].(string)
 	b.Value = prop["value"].(bool)
@@ -235,10 +221,6 @@ func (b *BooleanProperty) FromJSON(prop map[string]interface{}) *BooleanProperty
 func (n *NumericProperty) FromJSON(prop map[string]interface{}) *NumericProperty {
 	if len(prop) == 0 {
 		return nil
-	}
-
-	if n.BasicProperty == nil {
-		n.BasicProperty = &BasicProperty{}
 	}
 
 	n.BasicProperty.Type = prop["type"].(string)
