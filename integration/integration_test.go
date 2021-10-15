@@ -4,6 +4,10 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"os"
+	"strconv"
+	"testing"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
@@ -12,8 +16,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"os"
-	"testing"
 )
 
 var db *sql.DB
@@ -86,6 +88,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestEventRepositoryGorm_Persist(t *testing.T) {
+
 	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
@@ -149,6 +152,7 @@ func TestEventRepositoryGorm_Persist(t *testing.T) {
 			t.Errorf("expected the module id to be '%s', got '%s'", "applicationID", applicationID)
 		}
 	}
+
 }
 
 func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
@@ -319,5 +323,87 @@ func TestSaveAggregateEvents(t *testing.T) {
 
 	if len(baseAggregate.GetNewChanges()) > 0 {
 		t.Error("expected the list of new changes to be cleared")
+	}
+}
+
+func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
+
+	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
+	if err != nil {
+		t.Fatalf("error creating application '%s'", err)
+	}
+	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
+	if err != nil {
+		t.Fatalf("error setting up application'%s'", err)
+	}
+
+	generateEvents := make([]*weos.Event, 20000)
+	entity := &weos.AggregateRoot{}
+
+	for i := 0; i < 20000; i++ {
+
+		currValue := strconv.Itoa(i)
+
+		currEvent := "TEST_EVENT "
+		currID := "some id "
+		currType := "SomeType "
+
+		currEvent += currValue
+
+		generateEvents[i] = &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    currEvent,
+			Payload: nil,
+			Meta: weos.EventMeta{
+				EntityID:   currID,
+				EntityType: currType,
+				SequenceNo: 0,
+			},
+			Version: 1,
+		}
+
+		entity.NewChange(generateEvents[i])
+	}
+
+	//add an event handler
+	eventHandlerCalled := 0
+	eventRepository.AddSubscriber(func(ctx context.Context, event weos.Event) {
+		eventHandlerCalled += 1
+	})
+
+	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "12345"), entity)
+	if err != nil {
+		t.Fatalf("error encountered persisting event '%s'", err)
+	}
+
+	if eventHandlerCalled != 20000 {
+		t.Errorf("expected event handlers to be called %d time, called %d times", 2000, eventHandlerCalled)
+	}
+
+	rows, err := db.Query("SELECT entity_id,type, root_id,application_id FROM gorm_events WHERE entity_id  = $1", "some id")
+	if err != nil {
+		t.Fatalf("error retrieving events '%s'", err)
+	}
+
+	for i := 0; i < 20000; i++ {
+		for rows.Next() {
+			var eventType, entityID, accountID, applicationID string
+			err = rows.Scan(&entityID, &eventType, &accountID, &applicationID)
+			if err != nil {
+				t.Fatalf("error retrieving event '%s'", err)
+			}
+
+			if eventType != generateEvents[i].Type {
+				t.Errorf("expected the type to be '%s', got '%s'", generateEvents[i].Type, eventType)
+			}
+
+			if accountID != "123" {
+				t.Errorf("expected the account id to be '%s', got '%s'", "accountID", "123")
+			}
+
+			if applicationID != "applicationID" {
+				t.Errorf("expected the module id to be '%s', got '%s'", "applicationID", applicationID)
+			}
+		}
 	}
 }
