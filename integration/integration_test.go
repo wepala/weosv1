@@ -13,6 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/wepala/weos"
 	"golang.org/x/net/context"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -83,74 +84,43 @@ func TestMain(m *testing.M) {
 
 		os.Remove("test.db")
 		os.Exit(code)
-	}
-
-}
-
-func TestEventRepositoryGorm_Persist(t *testing.T) {
-
-	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
-	if err != nil {
-		t.Fatalf("error creating application '%s'", err)
-	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
-	if err != nil {
-		t.Fatalf("error setting up application'%s'", err)
-	}
-
-	mockEvent := &weos.Event{
-		ID:      ksuid.New().String(),
-		Type:    "TEST_EVENT",
-		Payload: nil,
-		Meta: weos.EventMeta{
-			EntityID:   "some id",
-			EntityType: "SomeType",
-			SequenceNo: 0,
-		},
-		Version: 1,
-	}
-
-	//add an event handler
-	eventHandlerCalled := 0
-	eventRepository.AddSubscriber(func(ctx context.Context, event weos.Event) {
-		eventHandlerCalled += 1
-	})
-
-	entity := &weos.AggregateRoot{}
-	entity.NewChange(mockEvent)
-
-	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "123"), entity)
-	if err != nil {
-		t.Fatalf("error encountered persisting event '%s'", err)
-	}
-
-	if eventHandlerCalled != 1 {
-		t.Errorf("expected event handlers to be called %d time, called %d times", 1, eventHandlerCalled)
-	}
-
-	rows, err := db.Query("SELECT entity_id,type, root_id,application_id FROM gorm_events WHERE entity_id  = $1", "some id")
-	if err != nil {
-		t.Fatalf("error retrieving events '%s'", err)
-	}
-
-	for rows.Next() {
-		var eventType, entityID, accountID, applicationID string
-		err = rows.Scan(&entityID, &eventType, &accountID, &applicationID)
+	case "mysql":
+		log.Info("Started mysql database")
+		// uses a sensible default on windows (tcp/http) and linux/osx (socket)
+		pool, err := dockertest.NewPool("")
 		if err != nil {
-			t.Fatalf("error retrieving event '%s'", err)
+			log.Fatalf("Could not connect to docker: %s", err)
 		}
 
-		if eventType != mockEvent.Type {
-			t.Errorf("expected the type to be '%s', got '%s'", mockEvent.Type, eventType)
+		// pulls an image, creates a container based on it and runs it
+		resource, err := pool.Run("mysql", "5.7", []string{"MYSQL_ROOT_PASSWORD=secret"})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err)
 		}
 
-		if accountID != "123" {
-			t.Errorf("expected the account id to be '%s', got '%s'", "accountID", "123")
+		// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
+		if err = pool.Retry(func() error {
+			db, err = sql.Open("mysql", fmt.Sprintf("root:secret@(localhost:%s)/mysql?sql_mode='ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'&parseTime=%s", resource.GetPort("3306/tcp"), strconv.FormatBool(true)))
+			if err != nil {
+				return err
+			}
+			return db.Ping()
+		}); err != nil {
+			log.Fatalf("Could not connect to docker: %s", err)
 		}
-
-		if applicationID != "applicationID" {
-			t.Errorf("expected the module id to be '%s', got '%s'", "applicationID", applicationID)
+		//setup gorm connection
+		gormDB, err = gorm.Open(mysql.New(mysql.Config{
+			Conn: db,
+		}), nil)
+		if err != nil {
+			log.Fatalf("failed to create postgresql database gorm connection '%s'", err)
 		}
+		code := m.Run()
+		// You can't defer this because os.Exit doesn't care for defer
+		if err := pool.Purge(resource); err != nil {
+			log.Fatalf("Could not purge resource: %s", err.Error())
+		}
+		os.Exit(code)
 	}
 
 }
@@ -345,8 +315,8 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 		currValue := strconv.Itoa(i)
 
 		currEvent := "TEST_EVENT "
-		currID := "some id "
-		currType := "SomeType "
+		currID := "batch id"
+		currType := "SomeType"
 
 		currEvent += currValue
 
@@ -377,33 +347,66 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 	}
 
 	if eventHandlerCalled != 20000 {
-		t.Errorf("expected event handlers to be called %d time, called %d times", 2000, eventHandlerCalled)
+		t.Errorf("expected event handlers to be called %d time, called %d times", 20000, eventHandlerCalled)
 	}
 
-	rows, err := db.Query("SELECT entity_id,type, root_id,application_id FROM gorm_events WHERE entity_id  = $1", "some id")
-	if err != nil {
-		t.Fatalf("error retrieving events '%s'", err)
+	//Struct for query results
+	type QueryResults struct {
+		entityID      string
+		eventType     string
+		accountID     string
+		applicationID string
+		sequenceNo    int
 	}
 
-	for i := 0; i < 20000; i++ {
+	var rows *sql.Rows
+
+	if *database == "mysql" {
+		rows, err = db.Query("SELECT entity_id,type, root_id,application_id,sequence_no FROM gorm_events WHERE entity_id  = ? ORDER BY sequence_no ASC", "batch id")
+		if err != nil {
+			t.Fatalf("error retrieving events '%s'", err)
+		}
+	} else {
+		rows, err = db.Query("SELECT entity_id,type, root_id,application_id FROM gorm_events WHERE entity_id  = $1", "batch id")
+		if err != nil {
+			t.Fatalf("error retrieving events '%s'", err)
+		}
+	}
+
+	defer rows.Close()
+	var rowInfo QueryResults
+	var queryRows []QueryResults
+
+	if *database == "mysql" {
 		for rows.Next() {
-			var eventType, entityID, accountID, applicationID string
-			err = rows.Scan(&entityID, &eventType, &accountID, &applicationID)
+			err = rows.Scan(&rowInfo.entityID, &rowInfo.eventType, &rowInfo.accountID, &rowInfo.applicationID, &rowInfo.sequenceNo)
 			if err != nil {
 				t.Fatalf("error retrieving event '%s'", err)
 			}
-
-			if eventType != generateEvents[i].Type {
-				t.Errorf("expected the type to be '%s', got '%s'", generateEvents[i].Type, eventType)
+			queryRows = append(queryRows, rowInfo)
+		}
+	} else {
+		for rows.Next() {
+			err = rows.Scan(&rowInfo.entityID, &rowInfo.eventType, &rowInfo.accountID, &rowInfo.applicationID)
+			if err != nil {
+				t.Fatalf("error retrieving event '%s'", err)
 			}
+			queryRows = append(queryRows, rowInfo)
+		}
+	}
 
-			if accountID != "123" {
-				t.Errorf("expected the account id to be '%s', got '%s'", "accountID", "123")
-			}
+	for i := 0; i < 20000; i++ {
 
-			if applicationID != "applicationID" {
-				t.Errorf("expected the module id to be '%s', got '%s'", "applicationID", applicationID)
-			}
+		if queryRows[i].eventType != generateEvents[i].Type {
+			t.Errorf("expected the type to be '%s', got '%s'", generateEvents[i].Type, queryRows[i].eventType)
+		}
+
+		if queryRows[i].accountID != "12345" {
+			t.Errorf("expected the account id to be '%s', got '%s'", "12345", queryRows[i].accountID)
+		}
+
+		if queryRows[i].applicationID != "applicationID" {
+			t.Errorf("expected the module id to be '%s', got '%s'", "applicationID", queryRows[i].applicationID)
 		}
 	}
 }
