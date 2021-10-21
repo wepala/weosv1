@@ -8,22 +8,22 @@ import (
 
 func TestDynamo_CreateEvent(t *testing.T) {
 
-	testEvent := &weos.TestEvent{
+	/*testEvent := &weos.TestEvent{
 		Name: "Test Event 1",
-	}
+	}*/
 
-	service, err := weos.NewEventService("Events")
+	err := weos.CreateTable()
 	if err != nil {
 		t.Fatalf("error creating service '%s'", err)
 	}
 
-	err = service.CreateEvent(testEvent)
+	/*err = service.CreateEvent(testEvent)
 	if err != nil {
 		t.Fatalf("error creating event '%s'", err)
-	}
+	}*/
 }
 
-func TestDynamo_GetEvent(t *testing.T) {
+/*func TestDynamo_GetEvent(t *testing.T) {
 
 	testEvent := &weos.TestEvent{
 		Name: "Test Event 1",
@@ -43,4 +43,4 @@ func TestDynamo_GetEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error getting event '%s'", err)
 	}
-}
+}*/
