@@ -34,6 +34,18 @@ type GormEvent struct {
 	SequenceNo    int64
 }
 
+type DynamoEvent struct {
+	ID            string `dynamo:"item_id,hash"`
+	EntityID      string `dynamo:"entity_id"`
+	EntityType    string `dynamo:"entity_type"`
+	Payload       datatypes.JSON
+	Type          string `dynamo:"type"`
+	RootID        string `dynamo:"root_id"`
+	ApplicationID string `dynamo:"application_id"`
+	User          string `dynamo:"user"`
+	SequenceNo    int64
+}
+
 //NewGormEvent converts a domain event to something that is a bit easier for Gorm to work with
 func NewGormEvent(event *Event) (GormEvent, error) {
 	payload, err := json.Marshal(event.Payload)
