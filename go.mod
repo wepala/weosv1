@@ -13,7 +13,6 @@ require (
 	github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244
 	github.com/segmentio/ksuid v1.0.3
 	github.com/sirupsen/logrus v1.7.0
-	github.com/stretchr/testify v1.5.1
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	golang.org/x/net v0.0.0-20210716203947-853a461950ff
 	gorm.io/datatypes v0.0.0-20200924071644-3967db6857cf
