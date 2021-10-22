@@ -4,15 +4,22 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"net/http"
+	"net/http/pprof"
 	"os"
+
 	"strconv"
 	"testing"
 
+	"github.com/go-redis/redis"
 	"github.com/ory/dockertest/v3"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/wepala/weos"
 	"golang.org/x/net/context"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -20,10 +27,16 @@ import (
 
 var db *sql.DB
 var gormDB *gorm.DB
-var database = flag.String("database", "sqlite3", "run database integration tests")
+var database = flag.String("database", "redis", "run database integration tests")
 var err error
+var redisContainer testcontainers.Container
+var redisdb *redis.Client
+var redisEndpoint string
 
 func TestMain(m *testing.M) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/custom_debug_path/profile", pprof.Profile)
+	log.Fatal(http.ListenAndServe(":7777", mux))
 	flag.Parse()
 	switch *database {
 	case "postgres":
@@ -83,6 +96,85 @@ func TestMain(m *testing.M) {
 
 		os.Remove("test.db")
 		os.Exit(code)
+	case "mysql":
+		log.Info("Started mysql database")
+		// uses a sensible default on windows (tcp/http) and linux/osx (socket)
+		pool, err := dockertest.NewPool("")
+		if err != nil {
+			log.Fatalf("Could not connect to docker: %s", err)
+		}
+
+		// pulls an image, creates a container based on it and runs it
+		resource, err := pool.Run("mysql", "5.7", []string{"MYSQL_ROOT_PASSWORD=secret"})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err)
+		}
+
+		// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
+		if err = pool.Retry(func() error {
+			db, err = sql.Open("mysql", fmt.Sprintf("root:secret@(localhost:%s)/mysql?sql_mode='ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'&parseTime=%s", resource.GetPort("3306/tcp"), strconv.FormatBool(true)))
+			if err != nil {
+				return err
+			}
+			return db.Ping()
+		}); err != nil {
+			log.Fatalf("Could not connect to docker: %s", err)
+		}
+		//setup gorm connection
+		gormDB, err = gorm.Open(mysql.New(mysql.Config{
+			Conn: db,
+		}), nil)
+		if err != nil {
+			log.Fatalf("failed to create postgresql database gorm connection '%s'", err)
+		}
+		code := m.Run()
+
+		// You can't defer this because os.Exit doesn't care for defer
+		if err := pool.Purge(resource); err != nil {
+			log.Fatalf("Could not purge resource: %s", err.Error())
+		}
+		os.Exit(code)
+
+	case "redis":
+		//setup redis to run in docker
+		log.Infof("Started redis")
+		ctx := context.Background()
+		req := testcontainers.ContainerRequest{
+			Image:        "docker.redis.co/redis/redistestinstance:7.10.2",
+			Name:         "redis7-mock",
+			ExposedPorts: []string{"6379:6379/tcp", "6379:6379/tcp"},
+			Env:          map[string]string{"discovery.type": "single-node"},
+			WaitingFor:   wait.ForLog("started"),
+		}
+		redisContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		})
+		if err != nil {
+			log.Fatalf("failed to start redis container '%s'", err)
+		}
+
+		defer redisContainer.Terminate(ctx)
+
+		//get the endpoint that the container was run on
+		var endpoint string
+		endpoint, err = redisContainer.Host(ctx) //didn't use the endpoint call because it returns "localhost" which the client doesn't seem to like
+		cport, err := redisContainer.MappedPort(ctx, "6379")
+		if err != nil {
+			log.Fatalf("error setting up redis '%s'", err)
+		}
+		redisEndpoint = "http://" + endpoint + ":" + cport.Port()
+
+		redisdb = redis.NewClient(&redis.Options{
+			Addr: "localhost:6379",
+		})
+
+		if err != nil {
+			log.Fatalf("error setting up elasticsearch client '%s'", err)
+		}
+		code := m.Run()
+		os.Exit(code)
+
 	}
 
 }
