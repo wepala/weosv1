@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	github.com/aws/aws-sdk-go v1.38.0
-	github.com/guregu/dynamo v1.11.0
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/onsi/ginkgo v1.15.0 // indirect
