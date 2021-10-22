@@ -6,6 +6,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -16,11 +22,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type ApplicationConfig struct {
@@ -299,6 +300,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		}
 	}
 
+	//Do a switch(or if statement) for if its dynamodb
 	if eventRepository == nil {
 		eventRepository, err = NewBasicEventRepository(gormDB, logger, false, config.AccountID, config.ApplicationID)
 		if err != nil {
