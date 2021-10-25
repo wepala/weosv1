@@ -9,8 +9,6 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/wepala/weos"
 	"golang.org/x/net/context"
 )
@@ -21,52 +19,27 @@ var client *redis.Client
 func TestMain(m *testing.M) {
 	//setup redis to run in docker
 	log.Infof("Started redis")
-	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "docker.redis.co/redis/redistestinstance:7.10.2",
-		Name:         "redis7-mock",
-		ExposedPorts: []string{"6379:6379/tcp", "6379:6379/tcp"},
-		Env:          map[string]string{"discovery.type": "single-node"},
-		WaitingFor:   wait.ForLog("started"),
-	}
-	redisContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		log.Fatalf("failed to start redis container '%s'", err)
-	}
-
-	defer redisContainer.Terminate(ctx)
-
-	req1 := testcontainers.ContainerRequest{
-		Image:        "docker.redis.co/redis/redistestinstance2:7.10.2",
-		Name:         "redis7-mock2",
-		ExposedPorts: []string{"6379:6379/tcp", "6378:6378/tcp"},
-		Env:          map[string]string{"discovery.type": "single-node"},
-		WaitingFor:   wait.ForLog("started"),
-	}
-	redisContainer1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req1,
-		Started:          true,
-	})
-	if err != nil {
-		log.Fatalf("failed to start redis container '%s'", err)
-	}
-
-	defer redisContainer1.Terminate(ctx)
 
 	client = redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
 	})
 
 	clientID = redis.NewClient(&redis.Options{
-		Addr: "localhost:6378",
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       1,
 	})
-
+	_, err := client.Ping().Result()
 	if err != nil {
-		log.Fatalf("error setting up redis client '%s'", err)
+		panic(err)
 	}
+	_, err = clientID.Ping().Result()
+	if err != nil {
+		panic(err)
+	}
+
 	code := m.Run()
 	os.Exit(code)
 }
@@ -145,10 +118,10 @@ func TestPersist(t *testing.T) {
 		eventHandlerCalled += 1
 	})
 
-	entity := &weos.AggregateRoot{}
+	entity := &weos.AggregateRoot{BasicEntity: weos.BasicEntity{ID: "2635sgbd"}}
 	entity.NewChange(mockEvent)
 
-	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "123"), entity)
+	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "root123"), entity)
 	if err != nil {
 		t.Fatalf("error encountered persisting event '%s'", err)
 	}
@@ -158,9 +131,8 @@ func TestPersist(t *testing.T) {
 	if results.Err() != nil {
 		t.Fatalf("error encountered getting event '%s'", err)
 	}
-	values := results.Val()
 
-	err = json.Unmarshal([]byte(values), &events)
+	err = json.Unmarshal([]byte(results.Val()), &events)
 
 	if err != nil {
 		t.Fatalf("error encountered unmarshalling events '%s'", err)
@@ -199,9 +171,8 @@ func TestPersist(t *testing.T) {
 	if results.Err() != nil {
 		t.Fatalf("error encountered getting event '%s'", err)
 	}
-	values = results.Val()
 
-	err = json.Unmarshal([]byte(values), &events)
+	err = json.Unmarshal([]byte(results.Val()), &events)
 
 	if err != nil {
 		t.Fatalf("error encountered unmarshalling events '%s'", err)
@@ -236,4 +207,428 @@ func TestPersist(t *testing.T) {
 	if events[0].Version != mockEvent.Version {
 		t.Errorf("expected event type to be  '%d', got '%d'", mockEvent.Version, events[0].Version)
 	}
+}
+
+func TestGetByAggregate(t *testing.T) {
+
+	t.Run("get aggregate with 1 event ", func(t *testing.T) {
+		eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
+		if err != nil {
+			t.Fatalf("error creating application '%s'", err)
+		}
+
+		entity := &struct {
+			weos.AggregateRoot
+			Type   string `json:"type"`
+			RootID string `json:"root_id"`
+		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
+			BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"}}}
+
+		payload, err := json.Marshal(&struct {
+			Title string `json:"title"`
+		}{Title: "First Post"})
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "CREATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 0,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		payload, err = json.Marshal(&struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}{Title: "Updated First Post", Description: "Lorem Ipsum"})
+
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent2 := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "UPDATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 1,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		payload, err = json.Marshal(&struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}{Title: "Updated First Post", Description: "Finalizing Post"})
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent3 := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "UPDATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 3,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		entity.NewChange(mockEvent)
+		entity.NewChange(mockEvent2)
+		entity.NewChange(mockEvent3)
+
+		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity.RootID), entity)
+		if err != nil {
+			t.Fatalf("error encountered persisting event '%s'", err)
+		}
+
+		events, err := eventRepository.GetByAggregate(entity.ID)
+		if err != nil {
+			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity.ID, err)
+		}
+
+		if len(events) != 3 {
+			t.Errorf("expected %d events got %d", 3, len(events))
+		}
+	})
+	t.Run("get aggregate with 2 events ", func(t *testing.T) {
+		eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
+		if err != nil {
+			t.Fatalf("error creating application '%s'", err)
+		}
+
+		entity := &struct {
+			weos.AggregateRoot
+			Type   string `json:"type"`
+			RootID string `json:"root_id"`
+		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
+			BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"}}}
+
+		entity1 := &struct {
+			weos.AggregateRoot
+			Type   string `json:"type"`
+			RootID string `json:"root_id"`
+		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
+			BasicEntity: weos.BasicEntity{ID: "iNfR0jYD9UbY"}}}
+
+		payload, err := json.Marshal(&struct {
+			Title string `json:"title"`
+		}{Title: "First Post"})
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "CREATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 0,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		payload, err = json.Marshal(&struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}{Title: "Updated First Post", Description: "Lorem Ipsum"})
+
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent2 := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "UPDATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 1,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		payload, err = json.Marshal(&struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}{Title: "Updated First Post", Description: "Finalizing Post"})
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent3 := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "UPDATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity1.ID,
+				EntityType: entity1.Type,
+				SequenceNo: 0,
+				RootID:     entity1.RootID,
+			},
+			Version: 1,
+		}
+
+		entity.NewChange(mockEvent)
+		entity.NewChange(mockEvent2)
+		entity1.NewChange(mockEvent3)
+
+		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity.RootID), entity)
+		if err != nil {
+			t.Fatalf("error encountered persisting event '%s'", err)
+		}
+		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity1.RootID), entity1)
+		if err != nil {
+			t.Fatalf("error encountered persisting event '%s'", err)
+		}
+
+		events, err := eventRepository.GetByAggregate(entity.ID)
+		if err != nil {
+			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity.ID, err)
+		}
+
+		if len(events) != 2 {
+			t.Errorf("expected %d events got %d", 2, len(events))
+		}
+
+		events, err = eventRepository.GetByAggregate(entity1.ID)
+		if err != nil {
+			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity1.ID, err)
+		}
+
+		if len(events) != 1 {
+			t.Errorf("expected %d events got %d", 1, len(events))
+		}
+	})
+}
+
+func TestGetByEntityAndAggregate(t *testing.T) {
+
+	t.Run("get aggregate with 1 event ", func(t *testing.T) {
+		eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
+		if err != nil {
+			t.Fatalf("error creating application '%s'", err)
+		}
+		entity := &struct {
+			weos.AggregateRoot
+			Type   string `json:"type"`
+			RootID string `json:"root_id"`
+		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
+			BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"}}}
+
+		payload, err := json.Marshal(&struct {
+			Title string `json:"title"`
+		}{Title: "First Post"})
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "CREATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 0,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		payload, err = json.Marshal(&struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}{Title: "Updated First Post", Description: "Lorem Ipsum"})
+
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent2 := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "UPDATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 1,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		payload, err = json.Marshal(&struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}{Title: "Updated First Post", Description: "Finalizing Post"})
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent3 := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "UPDATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 3,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		entity.NewChange(mockEvent)
+		entity.NewChange(mockEvent2)
+		entity.NewChange(mockEvent3)
+
+		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity.RootID), entity)
+		if err != nil {
+			t.Fatalf("error encountered persisting event '%s'", err)
+		}
+
+		events, err := eventRepository.GetByEntityAndAggregate(entity.ID, entity.Type, entity.RootID)
+		if err != nil {
+			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity.ID, err)
+		}
+
+		if len(events) != 3 {
+			t.Errorf("expected %d events got %d", 3, len(events))
+		}
+
+	})
+
+	t.Run("get aggregate with 2 events ", func(t *testing.T) {
+		eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
+		if err != nil {
+			t.Fatalf("error creating application '%s'", err)
+		}
+
+		entity := &struct {
+			weos.AggregateRoot
+			Type   string `json:"type"`
+			RootID string `json:"root_id"`
+		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
+			BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"}}}
+		entity1 := &struct {
+			weos.AggregateRoot
+			Type   string `json:"type"`
+			RootID string `json:"root_id"`
+		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
+			BasicEntity: weos.BasicEntity{ID: "iNfR0jYD9UbY"}}}
+
+		payload, err := json.Marshal(&struct {
+			Title string `json:"title"`
+		}{Title: "First Post"})
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "CREATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 0,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		payload, err = json.Marshal(&struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}{Title: "Updated First Post", Description: "Lorem Ipsum"})
+
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent2 := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "UPDATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity.ID,
+				EntityType: entity.Type,
+				SequenceNo: 1,
+				RootID:     entity.RootID,
+			},
+			Version: 1,
+		}
+
+		payload, err = json.Marshal(&struct {
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}{Title: "Updated First Post", Description: "Finalizing Post"})
+		if err != nil {
+			t.Fatalf("error encountered marshalling payload '%s'", err)
+		}
+
+		mockEvent3 := &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    "UPDATE_POST",
+			Payload: payload,
+			Meta: weos.EventMeta{
+				EntityID:   entity1.ID,
+				EntityType: entity1.Type,
+				SequenceNo: 0,
+				RootID:     entity1.RootID,
+			},
+			Version: 1,
+		}
+
+		entity.NewChange(mockEvent)
+		entity.NewChange(mockEvent2)
+		entity1.NewChange(mockEvent3)
+
+		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity.RootID), entity)
+		if err != nil {
+			t.Fatalf("error encountered persisting event '%s'", err)
+		}
+		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity1.RootID), entity1)
+		if err != nil {
+			t.Fatalf("error encountered persisting event '%s'", err)
+		}
+
+		events, err := eventRepository.GetByEntityAndAggregate(entity.ID, entity.Type, entity.RootID)
+		if err != nil {
+			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity.ID, err)
+		}
+
+		if len(events) != 2 {
+			t.Errorf("expected %d events got %d", 2, len(events))
+		}
+
+		events, err = eventRepository.GetByEntityAndAggregate(entity1.ID, entity1.Type, entity1.RootID)
+		if err != nil {
+			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity1.ID, err)
+		}
+
+		if len(events) != 1 {
+			t.Errorf("expected %d events got %d", 1, len(events))
+		}
+	})
 }

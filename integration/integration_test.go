@@ -11,12 +11,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/go-redis/redis"
 	"github.com/ory/dockertest/v3"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+
 	"github.com/wepala/weos"
 	"golang.org/x/net/context"
 	"gorm.io/driver/mysql"
@@ -27,11 +25,8 @@ import (
 
 var db *sql.DB
 var gormDB *gorm.DB
-var database = flag.String("database", "redis", "run database integration tests")
+var database = flag.String("database", "postgres", "run database integration tests")
 var err error
-var redisContainer testcontainers.Container
-var redisdb *redis.Client
-var redisEndpoint string
 
 func TestMain(m *testing.M) {
 	mux := http.NewServeMux()
@@ -134,47 +129,6 @@ func TestMain(m *testing.M) {
 			log.Fatalf("Could not purge resource: %s", err.Error())
 		}
 		os.Exit(code)
-
-	case "redis":
-		//setup redis to run in docker
-		log.Infof("Started redis")
-		ctx := context.Background()
-		req := testcontainers.ContainerRequest{
-			Image:        "docker.redis.co/redis/redistestinstance:7.10.2",
-			Name:         "redis7-mock",
-			ExposedPorts: []string{"6379:6379/tcp", "6379:6379/tcp"},
-			Env:          map[string]string{"discovery.type": "single-node"},
-			WaitingFor:   wait.ForLog("started"),
-		}
-		redisContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-			ContainerRequest: req,
-			Started:          true,
-		})
-		if err != nil {
-			log.Fatalf("failed to start redis container '%s'", err)
-		}
-
-		defer redisContainer.Terminate(ctx)
-
-		//get the endpoint that the container was run on
-		var endpoint string
-		endpoint, err = redisContainer.Host(ctx) //didn't use the endpoint call because it returns "localhost" which the client doesn't seem to like
-		cport, err := redisContainer.MappedPort(ctx, "6379")
-		if err != nil {
-			log.Fatalf("error setting up redis '%s'", err)
-		}
-		redisEndpoint = "http://" + endpoint + ":" + cport.Port()
-
-		redisdb = redis.NewClient(&redis.Options{
-			Addr: "localhost:6379",
-		})
-
-		if err != nil {
-			log.Fatalf("error setting up elasticsearch client '%s'", err)
-		}
-		code := m.Run()
-		os.Exit(code)
-
 	}
 
 }

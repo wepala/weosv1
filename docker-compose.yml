@@ -1,0 +1,20 @@
+version: "3.7"
+
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    container_name: "redis"
+  redis-go-server:
+    image: schadokar/redis-go-server:latest
+    environment:
+      - REDIS_DB_URL=redis:6379
+      - REDIS_DB_PASSWORD=
+      - REDIS_DB=0
+    ports:
+      - 8080:8080
+    depends_on:
+      - redis-db
+    container_name: redis-go-server
+  

@@ -2,6 +2,7 @@ package weos
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/go-redis/redis"
 	"golang.org/x/net/context"
@@ -182,15 +183,15 @@ func (r *EventRepositoryRedis) GetAggregateSequenceNumber(ID string) (int64, err
 }
 
 func (r *EventRepositoryRedis) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error) {
-	return nil, nil
+	return nil, fmt.Errorf("this function is not supported by Redis Database")
 }
 
 func (r *EventRepositoryRedis) GetByAggregateAndType(ID string, entityType string) ([]*Event, error) {
-	return nil, nil
+	return nil, fmt.Errorf("this function is not supported by Redis Database")
 }
 
 func (r *EventRepositoryRedis) Migrate(ctx context.Context) error {
-	return nil
+	return fmt.Errorf("this function is not supported by Redis Database")
 }
 
 func NewRedisEventRepository(client *redis.Client, clientID *redis.Client, logger Log, accountID string, applicationID string) (EventRepository, error) {
