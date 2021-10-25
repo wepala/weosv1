@@ -28,10 +28,10 @@ func TestDynamo_AddEvent(t *testing.T) {
 		t.Fatalf("error creating application '%s'", err)
 	}
 
-	generateEvents := make([]*weos.Event, 1000)
+	generateEvents := make([]*weos.Event, 2000)
 	entity := &weos.AggregateRoot{}
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 2000; i++ {
 
 		currValue := strconv.Itoa(i)
 

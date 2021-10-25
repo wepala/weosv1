@@ -172,7 +172,55 @@ func NewDynamoInput(event *Event) (*dynamodb.PutItemInput, error) {
 	}, nil
 }
 
+func NewDynamoBatchInput(event *Event) (*dynamodb.WriteRequest, error) {
+	payload, err := json.Marshal(event.Payload)
+	if err != nil {
+		return &dynamodb.WriteRequest{}, err
+	}
+
+	return &dynamodb.WriteRequest{
+		PutRequest: &dynamodb.PutRequest{
+			Item: map[string]*dynamodb.AttributeValue{
+				"ID": {
+					S: aws.String(event.ID),
+				},
+				"EntityID": {
+					S: aws.String(event.Meta.EntityID),
+				},
+				"EntityType": {
+					S: aws.String(event.Meta.EntityType),
+				},
+				"Payload": {
+					B: payload,
+				},
+				"Type": {
+					S: aws.String(event.Type),
+				},
+				"RootID": {
+					S: aws.String(event.Meta.RootID),
+				},
+				"ApplicationID": {
+					S: aws.String(event.Meta.Module),
+				},
+				"User": {
+					S: aws.String(event.Meta.User),
+				},
+				"SequenceNo": {
+					N: aws.String(strconv.Itoa(int(event.Meta.SequenceNo))),
+				},
+			},
+		},
+	}, nil
+}
+
 func (d *EventRepositoryDynamo) Persist(ctxt context.Context, entity AggregateInterface) error {
+	//Dynamo Batch cannot exceed 25 items
+	count := 0
+	total := 0
+
+	var dynamoBatchEvents []*dynamodb.WriteRequest
+	dynamoBatchWrite := &dynamodb.BatchWriteItemInput{}
+	dynamoBatchWrite.RequestItems = make(map[string][]*dynamodb.WriteRequest)
 
 	entities := entity.GetNewChanges()
 
@@ -192,12 +240,33 @@ func (d *EventRepositoryDynamo) Persist(ctxt context.Context, entity AggregateIn
 			event.Meta.Group = d.GroupID
 		}
 
-		dynamoEvent, err := NewDynamoInput(event)
+		dynamoEvent, err := NewDynamoBatchInput(event)
 		if err != nil {
 			return err
 		}
 
-		_, err = d.DB.PutItem(dynamoEvent)
+		dynamoBatchEvents = append(dynamoBatchEvents, dynamoEvent)
+		total++
+		count++
+
+		dynamoBatchWrite.RequestItems["Events"] = dynamoBatchEvents
+
+		if count == 25 {
+			_, err := d.DB.BatchWriteItem(dynamoBatchWrite)
+			if err != nil {
+				return err
+			}
+
+			count = 0
+			dynamoBatchEvents = []*dynamodb.WriteRequest{}
+			dynamoBatchWrite.RequestItems = make(map[string][]*dynamodb.WriteRequest)
+
+		}
+
+	}
+
+	if count != 0 && count < 25 {
+		_, err := d.DB.BatchWriteItem(dynamoBatchWrite)
 		if err != nil {
 			return err
 		}
@@ -209,6 +278,7 @@ func (d *EventRepositoryDynamo) Persist(ctxt context.Context, entity AggregateIn
 	for _, entity := range entities {
 		d.eventDispatcher.Dispatch(ctxt, *entity.(*Event))
 	}
+
 	return nil
 }
 
