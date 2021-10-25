@@ -51,6 +51,8 @@ type DynamoEvent struct {
 	Random string `dynamo:"Random"`
 }*/
 
+const TABLE_NAME = "Events"
+
 type EventRepositoryDynamo struct {
 	DB              *dynamodb.DynamoDB
 	eventDispatcher EventDisptacher
@@ -107,7 +109,7 @@ func CreateTable() error {
 			ReadCapacityUnits:  aws.Int64(10),
 			WriteCapacityUnits: aws.Int64(10),
 		},
-		TableName: aws.String("Events"),
+		TableName: aws.String(TABLE_NAME),
 	})
 
 	return err
@@ -132,6 +134,7 @@ func NewDynamoEvent(event *Event) (DynamoEvent, error) {
 	}, nil
 }
 
+//Persist - use with PutItem
 func NewDynamoInput(event *Event) (*dynamodb.PutItemInput, error) {
 	payload, err := json.Marshal(event.Payload)
 	if err != nil {
@@ -168,10 +171,11 @@ func NewDynamoInput(event *Event) (*dynamodb.PutItemInput, error) {
 				N: aws.String(strconv.Itoa(int(event.Meta.SequenceNo))),
 			},
 		},
-		TableName: aws.String("Events"),
+		TableName: aws.String(TABLE_NAME),
 	}, nil
 }
 
+//Persist - use with BatchWriteItem
 func NewDynamoBatchInput(event *Event) (*dynamodb.WriteRequest, error) {
 	payload, err := json.Marshal(event.Payload)
 	if err != nil {
@@ -249,7 +253,7 @@ func (d *EventRepositoryDynamo) Persist(ctxt context.Context, entity AggregateIn
 		total++
 		count++
 
-		dynamoBatchWrite.RequestItems["Events"] = dynamoBatchEvents
+		dynamoBatchWrite.RequestItems[TABLE_NAME] = dynamoBatchEvents
 
 		if count == 25 {
 			_, err := d.DB.BatchWriteItem(dynamoBatchWrite)
@@ -307,7 +311,32 @@ func (d *EventRepositoryDynamo) GetAggregateSequenceNumber(ID string) (int64, er
 
 //GetByAggregate get events for a root aggregate
 func (d *EventRepositoryDynamo) GetByAggregate(ID string) ([]*Event, error) {
-	return nil, nil
+	tableName := TABLE_NAME
+
+	input := &dynamodb.QueryInput{
+		TableName: &tableName,
+		IndexName: aws.String("RootID"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":RootID": {
+				S: aws.String(ID),
+			},
+		},
+		KeyConditionExpression: aws.String("RootID = :RootID"),
+	}
+
+	output, err := d.DB.Query(input)
+	if err != nil {
+		return nil, err
+	}
+
+	//Just to check if it is outputting something from the query
+	if output == nil {
+		return nil, err
+	}
+
+	var dEvents []*Event
+
+	return dEvents, nil
 }
 
 func (d *EventRepositoryDynamo) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error) {

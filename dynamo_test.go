@@ -58,10 +58,27 @@ func TestDynamo_AddEvent(t *testing.T) {
 
 	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "12345"), entity)
 	if err != nil {
-		t.Fatalf("error creating event '%s'", err)
+		t.Fatalf("error persisting events '%s'", err)
 	}
 
 	//Check for events
+}
+
+func TestDynamo_GetByAggregate(t *testing.T) {
+	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), true, "accountID", "applicationID")
+	if err != nil {
+		t.Fatalf("error creating application '%s'", err)
+	}
+
+	output, err := eventRepository.GetByAggregate("12345")
+	if err != nil {
+		t.Fatalf("error getting by aggregate '%s'", err)
+	}
+
+	if output == nil {
+		t.Fatalf("expected output to not be nil")
+	}
+
 }
 
 /*func TestDynamo_AddEvent(t *testing.T) {
