@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"golang.org/x/net/context"
 	"gorm.io/datatypes"
 )
@@ -89,6 +88,31 @@ func connectDynamo() (db *dynamodb.DynamoDB) {
 	})))
 }
 
+// CreateTable creates a table
+func CreateTable() error {
+	_, err := dynamo.CreateTable(&dynamodb.CreateTableInput{
+		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+			{
+				AttributeName: aws.String("ID"),
+				AttributeType: aws.String("S"), // (S | N | B) for string, number, binary
+			},
+		},
+		KeySchema: []*dynamodb.KeySchemaElement{
+			{
+				AttributeName: aws.String("ID"),
+				KeyType:       aws.String("HASH"),
+			},
+		},
+		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
+			ReadCapacityUnits:  aws.Int64(10),
+			WriteCapacityUnits: aws.Int64(10),
+		},
+		TableName: aws.String("Events"),
+	})
+
+	return err
+}
+
 func NewDynamoEvent(event *Event) (DynamoEvent, error) {
 	payload, err := json.Marshal(event.Payload)
 	if err != nil {
@@ -148,15 +172,10 @@ func NewDynamoInput(event *Event) (*dynamodb.PutItemInput, error) {
 	}, nil
 }
 
-func (d *EventRepositoryDynamo) PersistDynamo(ctxt context.Context, entity AggregateInterface) error {
-	//TODO use the information in the context to get account info, module info. //didn't think it should barf if an empty list is passed
-	var dynamoEvents []DynamoEvent
+func (d *EventRepositoryDynamo) Persist(ctxt context.Context, entity AggregateInterface) error {
+
 	entities := entity.GetNewChanges()
-	/*savePointID := "s" + ksuid.New().String() //NOTE the save point can't start with a number
-	e.logger.Infof("persisting %d events with save point %s", len(entities), savePointID)
-	if e.unitOfWork {
-		e.DB.SavePoint(savePointID)
-	}*/
+
 	for _, entity := range entities {
 		event := entity.(*Event)
 		//let's fill in meta data if it's not already in the object
@@ -172,128 +191,76 @@ func (d *EventRepositoryDynamo) PersistDynamo(ctxt context.Context, entity Aggre
 		if event.Meta.Group == "" {
 			event.Meta.Group = d.GroupID
 		}
-		/*if !event.IsValid() {
-			for _, terr := range event.GetErrors() {
-				d.logger.Errorf("error encountered persisting entity '%s', '%s'", event.Meta.EntityID, terr)
-			}
-			if d.unitOfWork {
-				d.logger.Debugf("rolling back saving events to %s", savePointID)
-				d.DB.RollbackTo(savePointID)
-			}
 
-			return event.GetErrors()[0]
-		}*/
-
-		dynamoEvent, err := NewDynamoEvent(event)
+		dynamoEvent, err := NewDynamoInput(event)
 		if err != nil {
 			return err
 		}
-		dynamoEvents = append(dynamoEvents, dynamoEvent)
-	}
 
-	//Use NewDynamoInput and run the PutItem for each event? Research batchInputs
-
-	//PutItem
-	db := d.DB.PutItem(dynamoEvents)
-	if db.Error != nil {
-		return db.Error
+		_, err = d.DB.PutItem(dynamoEvent)
+		if err != nil {
+			return err
+		}
 	}
 
 	//call persist on the aggregate root to clear the new changes array
 	entity.Persist()
 
 	for _, entity := range entities {
-		e.eventDispatcher.Dispatch(ctxt, *entity.(*Event))
+		d.eventDispatcher.Dispatch(ctxt, *entity.(*Event))
 	}
 	return nil
 }
 
-/*// PutEvent inserts the struct TestEvent
-func PutEvent(event TestEvent) error {
-	_, err := dynamo.PutItem(&dynamodb.PutItemInput{
-		Item: map[string]*dynamodb.AttributeValue{
-			"ID": {
-				S: aws.String(event.ID),
-			},
-			"Name": {
-				S: aws.String(event.Name),
-			},
-			"Random": {
-				S: aws.String(event.Random),
-			},
-		},
-		TableName: aws.String("Events"),
-	})
-
-	return err
-}*/
-
-// CreateTable creates a table
-func CreateTable() error {
-	_, err := dynamo.CreateTable(&dynamodb.CreateTableInput{
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			{
-				AttributeName: aws.String("ID"),
-				AttributeType: aws.String("S"), // (S | N | B) for string, number, binary
-			},
-		},
-		KeySchema: []*dynamodb.KeySchemaElement{
-			{
-				AttributeName: aws.String("ID"),
-				KeyType:       aws.String("HASH"),
-			},
-		},
-		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(10),
-			WriteCapacityUnits: aws.Int64(10),
-		},
-		TableName: aws.String("Events"),
-	})
-
-	return err
+//AddSubscriber Allows you to add a handler that is triggered when events are dispatched
+func (d *EventRepositoryDynamo) AddSubscriber(handler EventHandler) {
+	d.eventDispatcher.AddSubscriber(handler)
 }
 
-// PutEvent inserts the struct TestEvent
-func PutEvent(event TestEvent) error {
-	_, err := dynamo.PutItem(&dynamodb.PutItemInput{
-		Item: map[string]*dynamodb.AttributeValue{
-			"ID": {
-				S: aws.String(event.ID),
-			},
-			"Name": {
-				S: aws.String(event.Name),
-			},
-			"Random": {
-				S: aws.String(event.Random),
-			},
-		},
-		TableName: aws.String("Events"),
-	})
-
-	return err
+//GetSubscribers Get the current list of event subscribers
+func (d *EventRepositoryDynamo) GetSubscribers() ([]EventHandler, error) {
+	return d.eventDispatcher.GetSubscribers(), nil
 }
 
-func GetEvent(id string) (event TestEvent, err error) {
-	result, err := dynamo.GetItem(&dynamodb.GetItemInput{
-		Key: map[string]*dynamodb.AttributeValue{
-			"ID": {
-				S: aws.String(id),
-			},
-		},
-		TableName: aws.String("Events"),
-	})
+func (d *EventRepositoryDynamo) Flush() error {
+	return nil
+}
 
-	if err != nil {
-		return event, err
+func (d *EventRepositoryDynamo) Migrate(ctx context.Context) error {
+	return nil
+}
+
+//GetAggregateSequenceNumber gets the latest sequence number for the aggregate entity
+func (d *EventRepositoryDynamo) GetAggregateSequenceNumber(ID string) (int64, error) {
+	return 0, nil
+}
+
+//GetByAggregate get events for a root aggregate
+func (d *EventRepositoryDynamo) GetByAggregate(ID string) ([]*Event, error) {
+	return nil, nil
+}
+
+func (d *EventRepositoryDynamo) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error) {
+	return nil, nil
+}
+
+func (d *EventRepositoryDynamo) GetByEntityAndAggregate(EntityID string, Type string, RootID string) ([]*Event, error) {
+	return nil, nil
+}
+
+//GetByAggregateAndType returns events given the entity id and the entity type.
+//Deprecated: 08/12/2021 This was in theory returning events by entity (not necessarily root aggregate). Upon introducing the RootID
+//events should now be retrieved by root id,entity type and entity id. Use GetByEntityAndAggregate instead
+func (d *EventRepositoryDynamo) GetByAggregateAndType(ID string, entityType string) ([]*Event, error) {
+	return nil, nil
+}
+
+func NewBasicEventRepositoryDynamo(dynamoDB *dynamodb.DynamoDB, logger Log, useUnitOfWork bool, accountID string, applicationID string) (EventRepository, error) {
+	if useUnitOfWork {
+		transaction := connectDynamo()
+		return &EventRepositoryDynamo{DB: transaction, logger: logger, unitOfWork: useUnitOfWork, AccountID: accountID, ApplicationID: applicationID}, nil
 	}
-
-	err = dynamodbattribute.UnmarshalMap(result.Item, &event)
-	if err != nil {
-		return event, err
-	}
-
-	return event, err
-
+	return &EventRepositoryDynamo{DB: dynamoDB, logger: logger, AccountID: accountID, ApplicationID: applicationID}, nil
 }
 
 /*
