@@ -315,7 +315,7 @@ func (d *EventRepositoryDynamo) GetByAggregate(ID string) ([]*Event, error) {
 
 	input := &dynamodb.QueryInput{
 		TableName: &tableName,
-		IndexName: aws.String("RootID"),
+		IndexName: aws.String("ID"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":RootID": {
 				S: aws.String(ID),

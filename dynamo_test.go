@@ -70,7 +70,40 @@ func TestDynamo_GetByAggregate(t *testing.T) {
 		t.Fatalf("error creating application '%s'", err)
 	}
 
-	output, err := eventRepository.GetByAggregate("12345")
+	generateEvents := make([]*weos.Event, 5)
+	entity := &weos.AggregateRoot{}
+
+	for i := 0; i < 5; i++ {
+
+		currValue := strconv.Itoa(i)
+
+		currEvent := "TEST_EVENT "
+		currID := "batch id"
+		currType := "SomeType"
+
+		currEvent += currValue
+
+		generateEvents[i] = &weos.Event{
+			ID:      currValue,
+			Type:    currEvent,
+			Payload: nil,
+			Meta: weos.EventMeta{
+				EntityID:   currID,
+				EntityType: currType,
+				SequenceNo: 0,
+			},
+			Version: 1,
+		}
+
+		entity.NewChange(generateEvents[i])
+	}
+
+	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "12345"), entity)
+	if err != nil {
+		t.Fatalf("error persisting events '%s'", err)
+	}
+
+	output, err := eventRepository.GetByAggregate("1")
 	if err != nil {
 		t.Fatalf("error getting by aggregate '%s'", err)
 	}
