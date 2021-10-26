@@ -19,8 +19,7 @@ type RedisEvent struct {
 
 type EventRepositoryRedis struct {
 	logger          Log
-	clientID        *redis.Client //database with the key as entity id
-	client          *redis.Client // database with a composite key of entity id,entity type and rootid
+	database        *redis.Client //database with the composite key as entity id, entity type and rootid
 	index           string
 	eventDispatcher EventDisptacher
 	AccountID       string
@@ -85,12 +84,8 @@ func (r *EventRepositoryRedis) Persist(ctxt context.Context, entity AggregateInt
 	if err != nil {
 		return err
 	}
-	status := r.clientID.Set(redisEvents[0].Meta.EntityID, marshalEvents, 0)
-	if status.Err() != nil {
-		return status.Err()
-	}
 
-	status = r.client.Set(redisEvents[0].Meta.EntityID+":"+redisEvents[0].Meta.EntityType+":"+redisEvents[0].Meta.RootID, marshalEvents, 0)
+	status := r.database.Set(redisEvents[0].Meta.EntityID+":"+redisEvents[0].Meta.EntityType+":"+redisEvents[0].Meta.RootID, marshalEvents, 0)
 	if status.Err() != nil {
 		return status.Err()
 	}
@@ -106,38 +101,13 @@ func (r *EventRepositoryRedis) Persist(ctxt context.Context, entity AggregateInt
 
 //GetByAggregate get events for a entity id
 func (r *EventRepositoryRedis) GetByAggregate(entityID string) ([]*Event, error) {
-	var events []RedisEvent
-	results := r.clientID.Get(entityID)
-	if results.Err() != nil {
-		return nil, results.Err()
-	}
-	values := results.Val()
-
-	err := json.Unmarshal([]byte(values), &events)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var tevents []*Event
-
-	for _, event := range events {
-		tevents = append(tevents, &Event{
-			ID:      event.ID,
-			Type:    event.Type,
-			Payload: json.RawMessage(event.Payload),
-			Meta:    event.Meta,
-			Version: event.Version,
-		})
-	}
-	return tevents, nil
-
+	return nil, fmt.Errorf("this function is not supported by Redis Database")
 }
 
-//GetByEntityAndAggregate gets events for a entity id, entity type and rootid
+//GetByEntityAndAggregate gets events for a entity id, entity type
 func (r *EventRepositoryRedis) GetByEntityAndAggregate(entityID string, entityType string, rootID string) ([]*Event, error) {
 	var events []RedisEvent
-	results := r.client.Get(entityID + ":" + entityType + ":" + rootID)
+	results := r.database.Get(entityID + ":" + entityType + ":" + rootID)
 	if results.Err() != nil {
 		return nil, results.Err()
 	}
@@ -194,7 +164,24 @@ func (r *EventRepositoryRedis) Migrate(ctx context.Context) error {
 	return fmt.Errorf("this function is not supported by Redis Database")
 }
 
-func NewRedisEventRepository(client *redis.Client, clientID *redis.Client, logger Log, accountID string, applicationID string) (EventRepository, error) {
+func (r *EventRepositoryRedis) Remove(entities []Entity) error {
+	if len(entities) == 0 {
+		return fmt.Errorf("No entities were found")
+	}
+	for _, event := range entities {
+		redisEvent, err := NewRedisEvent(event.(*Event))
+		if err != nil {
+			return err
+		}
+		err = r.database.Del(redisEvent.Meta.EntityID + ":" + redisEvent.Meta.EntityType + ":" + redisEvent.Meta.RootID).Err()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-	return &EventRepositoryRedis{clientID: clientID, client: client, logger: logger, AccountID: accountID, ApplicationID: applicationID}, nil
+func NewRedisEventRepository(database *redis.Client, logger Log, accountID string, applicationID string) (EventRepository, error) {
+
+	return &EventRepositoryRedis{database: database, logger: logger, AccountID: accountID, ApplicationID: applicationID}, nil
 }
