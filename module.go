@@ -6,6 +6,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-redis/redis"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -16,11 +23,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type ApplicationConfig struct {
@@ -299,13 +301,27 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		}
 	}
 
-	if eventRepository == nil {
-		eventRepository, err = NewBasicEventRepository(gormDB, logger, false, config.AccountID, config.ApplicationID)
-		if err != nil {
-			return nil, err
+	switch config.Database.Driver {
+	case "redis":
+		database := redis.NewClient(&redis.Options{
+			Addr:     "localhost:6379",
+			Password: "",
+			DB:       0,
+		})
+		if eventRepository == nil {
+			eventRepository, err = NewRedisEventRepository(database, logger, config.AccountID, config.ApplicationID)
+			if err != nil {
+				return nil, err
+			}
+		}
+	default:
+		if eventRepository == nil {
+			eventRepository, err = NewBasicEventRepository(gormDB, logger, false, config.AccountID, config.ApplicationID)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
-
 	return &BaseApplication{
 		id:              config.ModuleID,
 		title:           config.Title,

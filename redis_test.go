@@ -13,29 +13,18 @@ import (
 	"golang.org/x/net/context"
 )
 
-var clientID *redis.Client
-var client *redis.Client
+var database *redis.Client
 
 func TestMain(m *testing.M) {
 	//setup redis to run in docker
 	log.Infof("Started redis")
 
-	client = redis.NewClient(&redis.Options{
+	database = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
 	})
-
-	clientID = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       1,
-	})
-	_, err := client.Ping().Result()
-	if err != nil {
-		panic(err)
-	}
-	_, err = clientID.Ping().Result()
+	_, err := database.Ping().Result()
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +83,7 @@ func TestNewRedisEvent(t *testing.T) {
 
 func TestPersist(t *testing.T) {
 
-	eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
+	eventRepository, err := weos.NewRedisEventRepository(database, log.New(), "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
 	}
@@ -127,7 +116,8 @@ func TestPersist(t *testing.T) {
 	}
 
 	var events []weos.RedisEvent
-	results := clientID.Get(mockEvent.Meta.EntityID)
+
+	results := database.Get(mockEvent.Meta.EntityID + ":" + mockEvent.Meta.EntityType + ":" + mockEvent.Meta.RootID)
 	if results.Err() != nil {
 		t.Fatalf("error encountered getting event '%s'", err)
 	}
@@ -167,264 +157,12 @@ func TestPersist(t *testing.T) {
 	if events[0].Version != mockEvent.Version {
 		t.Errorf("expected event type to be  '%d', got '%d'", mockEvent.Version, events[0].Version)
 	}
-	results = client.Get(mockEvent.Meta.EntityID + ":" + mockEvent.Meta.EntityType + ":" + mockEvent.Meta.RootID)
-	if results.Err() != nil {
-		t.Fatalf("error encountered getting event '%s'", err)
-	}
-
-	err = json.Unmarshal([]byte(results.Val()), &events)
-
-	if err != nil {
-		t.Fatalf("error encountered unmarshalling events '%s'", err)
-	}
-	if len(events) == 0 {
-		t.Fatalf("unexpected error, no events found")
-	}
-	if events[0].ID != mockEvent.ID {
-		t.Errorf("expected event id to be  '%s', got '%s'", mockEvent.ID, events[0].ID)
-	}
-	if events[0].Type != mockEvent.Type {
-		t.Errorf("expected event type to be  '%s', got '%s'", mockEvent.Type, events[0].Type)
-	}
-	if events[0].Type != mockEvent.Type {
-		t.Errorf("expected event type to be  '%s', got '%s'", mockEvent.Type, events[0].Type)
-	}
-	if string(events[0].Payload) != "null" {
-		t.Errorf("expected event to be nil")
-	}
-	if events[0].Meta.EntityID != mockEvent.Meta.EntityID {
-		t.Errorf("expected entity id to be  '%s', got '%s'", mockEvent.Meta.EntityID, events[0].Meta.EntityID)
-	}
-	if events[0].Meta.EntityID != mockEvent.Meta.EntityID {
-		t.Errorf("expected entity type to be  '%s', got '%s'", mockEvent.Meta.EntityID, events[0].Meta.EntityID)
-	}
-	if events[0].Meta.User != mockEvent.Meta.User {
-		t.Errorf("expected user to be  '%s', got '%s'", mockEvent.Meta.User, events[0].Meta.User)
-	}
-	if events[0].Meta.SequenceNo != mockEvent.Meta.SequenceNo {
-		t.Errorf("expected event type to be  '%d', got '%d'", mockEvent.Meta.SequenceNo, events[0].Meta.SequenceNo)
-	}
-	if events[0].Version != mockEvent.Version {
-		t.Errorf("expected event type to be  '%d', got '%d'", mockEvent.Version, events[0].Version)
-	}
-}
-
-func TestGetByAggregate(t *testing.T) {
-
-	t.Run("get aggregate with 1 event ", func(t *testing.T) {
-		eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
-		if err != nil {
-			t.Fatalf("error creating application '%s'", err)
-		}
-
-		entity := &struct {
-			weos.AggregateRoot
-			Type   string `json:"type"`
-			RootID string `json:"root_id"`
-		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
-			BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"}}}
-
-		payload, err := json.Marshal(&struct {
-			Title string `json:"title"`
-		}{Title: "First Post"})
-		if err != nil {
-			t.Fatalf("error encountered marshalling payload '%s'", err)
-		}
-
-		mockEvent := &weos.Event{
-			ID:      ksuid.New().String(),
-			Type:    "CREATE_POST",
-			Payload: payload,
-			Meta: weos.EventMeta{
-				EntityID:   entity.ID,
-				EntityType: entity.Type,
-				SequenceNo: 0,
-				RootID:     entity.RootID,
-			},
-			Version: 1,
-		}
-
-		payload, err = json.Marshal(&struct {
-			Title       string `json:"title"`
-			Description string `json:"description"`
-		}{Title: "Updated First Post", Description: "Lorem Ipsum"})
-
-		if err != nil {
-			t.Fatalf("error encountered marshalling payload '%s'", err)
-		}
-
-		mockEvent2 := &weos.Event{
-			ID:      ksuid.New().String(),
-			Type:    "UPDATE_POST",
-			Payload: payload,
-			Meta: weos.EventMeta{
-				EntityID:   entity.ID,
-				EntityType: entity.Type,
-				SequenceNo: 1,
-				RootID:     entity.RootID,
-			},
-			Version: 1,
-		}
-
-		payload, err = json.Marshal(&struct {
-			Title       string `json:"title"`
-			Description string `json:"description"`
-		}{Title: "Updated First Post", Description: "Finalizing Post"})
-		if err != nil {
-			t.Fatalf("error encountered marshalling payload '%s'", err)
-		}
-
-		mockEvent3 := &weos.Event{
-			ID:      ksuid.New().String(),
-			Type:    "UPDATE_POST",
-			Payload: payload,
-			Meta: weos.EventMeta{
-				EntityID:   entity.ID,
-				EntityType: entity.Type,
-				SequenceNo: 3,
-				RootID:     entity.RootID,
-			},
-			Version: 1,
-		}
-
-		entity.NewChange(mockEvent)
-		entity.NewChange(mockEvent2)
-		entity.NewChange(mockEvent3)
-
-		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity.RootID), entity)
-		if err != nil {
-			t.Fatalf("error encountered persisting event '%s'", err)
-		}
-
-		events, err := eventRepository.GetByAggregate(entity.ID)
-		if err != nil {
-			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity.ID, err)
-		}
-
-		if len(events) != 3 {
-			t.Errorf("expected %d events got %d", 3, len(events))
-		}
-	})
-	t.Run("get aggregate with 2 events ", func(t *testing.T) {
-		eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
-		if err != nil {
-			t.Fatalf("error creating application '%s'", err)
-		}
-
-		entity := &struct {
-			weos.AggregateRoot
-			Type   string `json:"type"`
-			RootID string `json:"root_id"`
-		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
-			BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"}}}
-
-		entity1 := &struct {
-			weos.AggregateRoot
-			Type   string `json:"type"`
-			RootID string `json:"root_id"`
-		}{Type: "Post", RootID: "root123", AggregateRoot: weos.AggregateRoot{
-			BasicEntity: weos.BasicEntity{ID: "iNfR0jYD9UbY"}}}
-
-		payload, err := json.Marshal(&struct {
-			Title string `json:"title"`
-		}{Title: "First Post"})
-		if err != nil {
-			t.Fatalf("error encountered marshalling payload '%s'", err)
-		}
-
-		mockEvent := &weos.Event{
-			ID:      ksuid.New().String(),
-			Type:    "CREATE_POST",
-			Payload: payload,
-			Meta: weos.EventMeta{
-				EntityID:   entity.ID,
-				EntityType: entity.Type,
-				SequenceNo: 0,
-				RootID:     entity.RootID,
-			},
-			Version: 1,
-		}
-
-		payload, err = json.Marshal(&struct {
-			Title       string `json:"title"`
-			Description string `json:"description"`
-		}{Title: "Updated First Post", Description: "Lorem Ipsum"})
-
-		if err != nil {
-			t.Fatalf("error encountered marshalling payload '%s'", err)
-		}
-
-		mockEvent2 := &weos.Event{
-			ID:      ksuid.New().String(),
-			Type:    "UPDATE_POST",
-			Payload: payload,
-			Meta: weos.EventMeta{
-				EntityID:   entity.ID,
-				EntityType: entity.Type,
-				SequenceNo: 1,
-				RootID:     entity.RootID,
-			},
-			Version: 1,
-		}
-
-		payload, err = json.Marshal(&struct {
-			Title       string `json:"title"`
-			Description string `json:"description"`
-		}{Title: "Updated First Post", Description: "Finalizing Post"})
-		if err != nil {
-			t.Fatalf("error encountered marshalling payload '%s'", err)
-		}
-
-		mockEvent3 := &weos.Event{
-			ID:      ksuid.New().String(),
-			Type:    "UPDATE_POST",
-			Payload: payload,
-			Meta: weos.EventMeta{
-				EntityID:   entity1.ID,
-				EntityType: entity1.Type,
-				SequenceNo: 0,
-				RootID:     entity1.RootID,
-			},
-			Version: 1,
-		}
-
-		entity.NewChange(mockEvent)
-		entity.NewChange(mockEvent2)
-		entity1.NewChange(mockEvent3)
-
-		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity.RootID), entity)
-		if err != nil {
-			t.Fatalf("error encountered persisting event '%s'", err)
-		}
-		err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, entity1.RootID), entity1)
-		if err != nil {
-			t.Fatalf("error encountered persisting event '%s'", err)
-		}
-
-		events, err := eventRepository.GetByAggregate(entity.ID)
-		if err != nil {
-			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity.ID, err)
-		}
-
-		if len(events) != 2 {
-			t.Errorf("expected %d events got %d", 2, len(events))
-		}
-
-		events, err = eventRepository.GetByAggregate(entity1.ID)
-		if err != nil {
-			t.Fatalf("encountered error getting aggregate '%s' error: '%s'", entity1.ID, err)
-		}
-
-		if len(events) != 1 {
-			t.Errorf("expected %d events got %d", 1, len(events))
-		}
-	})
 }
 
 func TestGetByEntityAndAggregate(t *testing.T) {
 
 	t.Run("get aggregate with 1 event ", func(t *testing.T) {
-		eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
+		eventRepository, err := weos.NewRedisEventRepository(database, log.New(), "root123", "applicationID")
 		if err != nil {
 			t.Fatalf("error creating application '%s'", err)
 		}
@@ -518,8 +256,8 @@ func TestGetByEntityAndAggregate(t *testing.T) {
 
 	})
 
-	t.Run("get aggregate with 2 events ", func(t *testing.T) {
-		eventRepository, err := weos.NewRedisEventRepository(client, clientID, log.New(), "accountID", "applicationID")
+	t.Run("get aggregate with 2 events with same type ", func(t *testing.T) {
+		eventRepository, err := weos.NewRedisEventRepository(database, log.New(), "root123", "applicationID")
 		if err != nil {
 			t.Fatalf("error creating application '%s'", err)
 		}
