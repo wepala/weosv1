@@ -166,7 +166,7 @@ func (r *EventRepositoryRedis) Migrate(ctx context.Context) error {
 
 func (r *EventRepositoryRedis) Remove(entities []Entity) error {
 	if len(entities) == 0 {
-		return fmt.Errorf("No entities were found")
+		return fmt.Errorf("no entities were found")
 	}
 	for _, event := range entities {
 		redisEvent, err := NewRedisEvent(event.(*Event))
