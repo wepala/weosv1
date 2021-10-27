@@ -4,10 +4,12 @@ go 1.13
 
 require (
 	github.com/aws/aws-sdk-go v1.38.0
+	github.com/guregu/dynamo v1.11.0
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/onsi/gomega v1.10.5 // indirect
+	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/ory/dockertest/v3 v3.6.0
 	github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244
 	github.com/segmentio/ksuid v1.0.3

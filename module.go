@@ -12,6 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -80,6 +83,7 @@ type BaseApplication struct {
 	logger          Log
 	dbConnection    *sql.DB
 	db              *gorm.DB
+	dynamoDB        *dynamodb.DynamoDB
 	config          *ApplicationConfig
 	projections     []Projection
 	eventRepository EventRepository
@@ -235,23 +239,26 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		case "postgres":
 			connStr = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 				config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.User, config.Database.Password, config.Database.Database)
+		case "dynamoDB":
 		default:
 			return nil, errors.New(fmt.Sprintf("db driver '%s' is not supported ", config.Database.Driver))
 		}
 
-		db, err = sql.Open(config.Database.Driver, connStr)
-		if err != nil {
-			logger.Errorf("connection string '%s'", connStr)
-			return nil, NewError(fmt.Sprintf("error setting up connection to database '%s' with connection '%s'", err, connStr), err)
+		if config.Database.Driver != "dynamoDB" {
+			db, err = sql.Open(config.Database.Driver, connStr)
+			if err != nil {
+				logger.Errorf("connection string '%s'", connStr)
+				return nil, NewError(fmt.Sprintf("error setting up connection to database '%s' with connection '%s'", err, connStr), err)
+			}
+
+			db.SetMaxOpenConns(config.Database.MaxOpen)
+			db.SetMaxIdleConns(config.Database.MaxIdle)
 		}
-
-		db.SetMaxOpenConns(config.Database.MaxOpen)
-		db.SetMaxIdleConns(config.Database.MaxIdle)
-
 	}
 
 	//setup gorm connection
 	var gormDB *gorm.DB
+	var dynamoDB *dynamodb.DynamoDB
 	switch config.Database.Driver {
 	case "postgres":
 		gormDB, err = gorm.Open(postgres.New(postgres.Config{
@@ -290,6 +297,11 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		if err != nil {
 			return nil, err
 		}
+	case "dyanmoDB":
+		dynamoDB = dynamodb.New(session.Must(session.NewSession(&aws.Config{
+			Endpoint: aws.String("http://localhost:8000"),
+			Region:   aws.String("us-east-1"),
+		})))
 	default:
 		return nil, errors.New(fmt.Sprintf("we don't support database driver '%s'", config.Database.Driver))
 	}
@@ -301,10 +313,20 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 	}
 
 	//Do a switch(or if statement) for if its dynamodb
-	if eventRepository == nil {
-		eventRepository, err = NewBasicEventRepository(gormDB, logger, false, config.AccountID, config.ApplicationID)
-		if err != nil {
-			return nil, err
+	if config.Database.Driver != "dynamoDB" {
+		if eventRepository == nil {
+			eventRepository, err = NewBasicEventRepositoryDynamo(dynamoDB, logger, false, config.AccountID, config.ApplicationID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+	} else {
+		if eventRepository == nil {
+			eventRepository, err = NewBasicEventRepository(gormDB, logger, false, config.AccountID, config.ApplicationID)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -314,6 +336,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		logger:          logger,
 		dbConnection:    db,
 		db:              gormDB,
+		dynamoDB:        dynamoDB,
 		config:          config,
 		httpClient:      client,
 		eventRepository: eventRepository,

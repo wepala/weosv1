@@ -1,9 +1,14 @@
 package weos_test
 
 import (
+	"flag"
+	"os"
 	"strconv"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
@@ -12,20 +17,62 @@ import (
 )
 
 var dynamoDB *dynamodb.DynamoDB
+var database = flag.String("database", "dynamoDB", "run dynamo tests")
 
-func TestDynamo_CreateTable(t *testing.T) {
+func TestMain(m *testing.M) {
+	flag.Parse()
+	switch *database {
+	case "dynamoDB":
+		/*// uses a sensible default on windows (tcp/http) and linux/osx (socket)
+		pool, err := dockertest.NewPool("")
+		if err != nil {
+			log.Fatalf("Could not connect to docker: %s", err.Error())
+		}
+
+		// pulls an image, creates a container based on it and runs it
+		_, err = pool.Run("dynamoDB", "3.8", []string{"AWS_ACCESS_KEY_ID: fakeMyKeyId", "AWS_SECRET_ACCESS_KEY: fakeSecretAccessKey"})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err.Error())
+		}*/
+
+		sess, err := session.NewSession(&aws.Config{
+			Region: aws.String("us-east-1"),
+			Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
+				AccessKeyID:     *aws.String("fakeMyKeyId"),
+				SecretAccessKey: *aws.String("fakeSecretAccessKey"),
+			}),
+			Endpoint: aws.String("http://localhost:8000"),
+		})
+		if err != nil {
+			log.Fatalf("Could not setup dynamoDB: %s", err.Error())
+		}
+		dynamoDB = dynamodb.New(sess)
+
+		code := m.Run()
+
+		//os.Remove("shared-local-instance.db")
+		os.Exit(code)
+	}
+}
+
+/*func TestDynamo_CreateTable(t *testing.T) {
 
 	err := weos.CreateTable()
 	if err != nil {
 		t.Fatalf("error creating table '%s'", err)
 	}
-}
+}*/
 
 func TestDynamo_AddEvent(t *testing.T) {
 
-	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), true, "accountID", "applicationID")
+	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
+	}
+
+	err = eventRepository.(*weos.EventRepositoryDynamo).Migrate(context.Background())
+	if err != nil {
+		t.Fatalf("error setting up application'%s'", err)
 	}
 
 	generateEvents := make([]*weos.Event, 1000)
@@ -65,9 +112,14 @@ func TestDynamo_AddEvent(t *testing.T) {
 }
 
 func TestDynamo_GetByEntityAndAggregate(t *testing.T) {
-	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), true, "accountID", "applicationID")
+	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
+	}
+
+	err = eventRepository.(*weos.EventRepositoryDynamo).Migrate(context.Background())
+	if err != nil {
+		t.Fatalf("error setting up application'%s'", err)
 	}
 
 	generateEvents := make([]*weos.Event, 5)

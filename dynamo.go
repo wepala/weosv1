@@ -62,7 +62,7 @@ func connectDynamo() (db *dynamodb.DynamoDB) {
 }
 
 // CreateTable creates a table
-func CreateTable() error {
+/*func CreateTable() error {
 	_, err := dynamo.CreateTable(&dynamodb.CreateTableInput{
 		TableName: aws.String(TABLE_NAME),
 		// PK - ConcatKey + Seq No
@@ -94,7 +94,7 @@ func CreateTable() error {
 	})
 
 	return err
-}
+}*/
 
 func NewDynamoEvent(event *Event) (DynamoEvent, error) {
 	payload, err := json.Marshal(event.Payload)
@@ -287,8 +287,39 @@ func (d *EventRepositoryDynamo) Flush() error {
 	return nil
 }
 
+//TODO - This needs work. (I just copied and pasted the create table func.)
 func (d *EventRepositoryDynamo) Migrate(ctx context.Context) error {
-	return nil
+	_, err := d.DB.CreateTable(&dynamodb.CreateTableInput{
+		TableName: aws.String(TABLE_NAME),
+		// PK - ConcatKey + Seq No
+		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+			{
+				//Rename to PartitionKey - ConcatKey
+				AttributeName: aws.String("PartitionKey"),
+				AttributeType: aws.String("S"), // (S | N | B) for string, number, binary
+			},
+			{
+				AttributeName: aws.String("SortKey"),
+				AttributeType: aws.String("N"), // (S | N | B) for string, number, binary
+			},
+		},
+		KeySchema: []*dynamodb.KeySchemaElement{
+			{
+				AttributeName: aws.String("PartitionKey"),
+				KeyType:       aws.String("HASH"),
+			},
+			{
+				AttributeName: aws.String("SortKey"),
+				KeyType:       aws.String("Range"),
+			},
+		},
+		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
+			ReadCapacityUnits:  aws.Int64(10),
+			WriteCapacityUnits: aws.Int64(10),
+		},
+	})
+
+	return err
 }
 
 //GetAggregateSequenceNumber gets the latest sequence number for the aggregate entity
@@ -365,6 +396,7 @@ func (d *EventRepositoryDynamo) GetByAggregateAndType(ID string, entityType stri
 
 func NewBasicEventRepositoryDynamo(dynamoDB *dynamodb.DynamoDB, logger Log, useUnitOfWork bool, accountID string, applicationID string) (EventRepository, error) {
 	if useUnitOfWork {
+		//Not sure what's the equivalent or gormDB.Begin()
 		transaction := connectDynamo()
 		return &EventRepositoryDynamo{DB: transaction, logger: logger, unitOfWork: useUnitOfWork, AccountID: accountID, ApplicationID: applicationID}, nil
 	}
