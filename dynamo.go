@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"golang.org/x/net/context"
 	"gorm.io/datatypes"
 )
@@ -20,36 +21,6 @@ aws dynamodb list-tables --endpoint-url http://localhost:8000
 aws dynamodb scan --table-name Events --endpoint-url http://localhost:8000
 aws dynamodb delete-table --table-name Events --endpoint-url http://localhost:8000
 */
-
-/*
-type EventRepositoryDynamo struct {
-	DB              *dynamodb.DynamoDB
-	eventDispatcher EventDisptacher
-	logger          Log
-	unitOfWork      bool
-	AccountID       string
-	ApplicationID   string
-	GroupID         string
-	UserID          string
-}
-
-type DynamoEvent struct {
-	ID            string `dynamo:"item_id,hash"`
-	EntityID      string `dynamo:"entity_id"`
-	EntityType    string `dynamo:"entity_type"`
-	Payload       datatypes.JSON
-	Type          string `dynamo:"type"`
-	RootID        string `dynamo:"root_id"`
-	ApplicationID string `dynamo:"application_id"`
-	User          string `dynamo:"user"`
-	SequenceNo    int64
-}*/
-
-/*type TestEvent struct {
-	ID     string `dynamo:"event_id,hash"`
-	Name   string `dynamo:"name"`
-	Random string `dynamo:"Random"`
-}*/
 
 const TABLE_NAME = "Events"
 
@@ -65,7 +36,7 @@ type EventRepositoryDynamo struct {
 }
 
 type DynamoEvent struct {
-	ID            string `dynamo:"item_id,hash"`
+	EventID       string `dynamo:"event_id"`
 	EntityID      string `dynamo:"entity_id"`
 	EntityType    string `dynamo:"entity_type"`
 	Payload       datatypes.JSON
@@ -93,23 +64,33 @@ func connectDynamo() (db *dynamodb.DynamoDB) {
 // CreateTable creates a table
 func CreateTable() error {
 	_, err := dynamo.CreateTable(&dynamodb.CreateTableInput{
+		TableName: aws.String(TABLE_NAME),
+		// PK - ConcatKey + Seq No
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
-				AttributeName: aws.String("ID"),
+				//Rename to PartitionKey - ConcatKey
+				AttributeName: aws.String("PartitionKey"),
 				AttributeType: aws.String("S"), // (S | N | B) for string, number, binary
+			},
+			{
+				AttributeName: aws.String("SortKey"),
+				AttributeType: aws.String("N"), // (S | N | B) for string, number, binary
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
 			{
-				AttributeName: aws.String("ID"),
+				AttributeName: aws.String("PartitionKey"),
 				KeyType:       aws.String("HASH"),
+			},
+			{
+				AttributeName: aws.String("SortKey"),
+				KeyType:       aws.String("Range"),
 			},
 		},
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
 			ReadCapacityUnits:  aws.Int64(10),
 			WriteCapacityUnits: aws.Int64(10),
 		},
-		TableName: aws.String(TABLE_NAME),
 	})
 
 	return err
@@ -122,7 +103,7 @@ func NewDynamoEvent(event *Event) (DynamoEvent, error) {
 	}
 
 	return DynamoEvent{
-		ID:            event.ID,
+		EventID:       event.ID,
 		EntityID:      event.Meta.EntityID,
 		EntityType:    event.Meta.EntityType,
 		Payload:       payload,
@@ -143,7 +124,7 @@ func NewDynamoInput(event *Event) (*dynamodb.PutItemInput, error) {
 
 	return &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
-			"ID": {
+			"EventID": {
 				S: aws.String(event.ID),
 			},
 			"EntityID": {
@@ -185,7 +166,7 @@ func NewDynamoBatchInput(event *Event) (*dynamodb.WriteRequest, error) {
 	return &dynamodb.WriteRequest{
 		PutRequest: &dynamodb.PutRequest{
 			Item: map[string]*dynamodb.AttributeValue{
-				"ID": {
+				"EventID": {
 					S: aws.String(event.ID),
 				},
 				"EntityID": {
@@ -210,6 +191,12 @@ func NewDynamoBatchInput(event *Event) (*dynamodb.WriteRequest, error) {
 					S: aws.String(event.Meta.User),
 				},
 				"SequenceNo": {
+					N: aws.String(strconv.Itoa(int(event.Meta.SequenceNo))),
+				},
+				"PartitionKey": {
+					S: aws.String(event.Meta.RootID + "-" + event.Meta.EntityType + "-" + event.Meta.EntityID),
+				},
+				"SortKey": {
 					N: aws.String(strconv.Itoa(int(event.Meta.SequenceNo))),
 				},
 			},
@@ -253,9 +240,8 @@ func (d *EventRepositoryDynamo) Persist(ctxt context.Context, entity AggregateIn
 		total++
 		count++
 
-		dynamoBatchWrite.RequestItems[TABLE_NAME] = dynamoBatchEvents
-
 		if count == 25 {
+			dynamoBatchWrite.RequestItems[TABLE_NAME] = dynamoBatchEvents
 			_, err := d.DB.BatchWriteItem(dynamoBatchWrite)
 			if err != nil {
 				return err
@@ -270,6 +256,7 @@ func (d *EventRepositoryDynamo) Persist(ctxt context.Context, entity AggregateIn
 	}
 
 	if count != 0 && count < 25 {
+		dynamoBatchWrite.RequestItems[TABLE_NAME] = dynamoBatchEvents
 		_, err := d.DB.BatchWriteItem(dynamoBatchWrite)
 		if err != nil {
 			return err
@@ -311,17 +298,23 @@ func (d *EventRepositoryDynamo) GetAggregateSequenceNumber(ID string) (int64, er
 
 //GetByAggregate get events for a root aggregate
 func (d *EventRepositoryDynamo) GetByAggregate(ID string) ([]*Event, error) {
-	tableName := TABLE_NAME
+	return nil, nil
+}
+
+func (d *EventRepositoryDynamo) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error) {
+	return nil, nil
+}
+
+func (d *EventRepositoryDynamo) GetByEntityAndAggregate(EntityID string, Type string, RootID string) ([]*Event, error) {
 
 	input := &dynamodb.QueryInput{
-		TableName: &tableName,
-		IndexName: aws.String("ID"),
+		TableName: aws.String(TABLE_NAME),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":RootID": {
-				S: aws.String(ID),
+			":PartitionKey": {
+				S: aws.String(RootID + "-" + Type + "-" + EntityID),
 			},
 		},
-		KeyConditionExpression: aws.String("RootID = :RootID"),
+		KeyConditionExpression: aws.String("PartitionKey = :PartitionKey"),
 	}
 
 	output, err := d.DB.Query(input)
@@ -334,17 +327,33 @@ func (d *EventRepositoryDynamo) GetByAggregate(ID string) ([]*Event, error) {
 		return nil, err
 	}
 
-	var dEvents []*Event
+	var dynamoEvents []*DynamoEvent
+	var events []*Event
 
-	return dEvents, nil
-}
+	err = dynamodbattribute.UnmarshalListOfMaps(output.Items, &dynamoEvents)
+	if err != nil {
+		return nil, err
+	}
 
-func (d *EventRepositoryDynamo) GetByAggregateAndSequenceRange(ID string, start int64, end int64) ([]*Event, error) {
-	return nil, nil
-}
+	//Converts dynamoEvent to regular Event
+	for _, event := range dynamoEvents {
+		events = append(events, &Event{
+			ID:      event.EventID,
+			Type:    event.Type,
+			Payload: json.RawMessage(event.Payload),
+			Meta: EventMeta{
+				EntityID:   event.EntityID,
+				EntityType: event.EntityType,
+				RootID:     event.RootID,
+				Module:     event.ApplicationID,
+				User:       event.User,
+				SequenceNo: event.SequenceNo,
+			},
+			Version: 0,
+		})
+	}
 
-func (d *EventRepositoryDynamo) GetByEntityAndAggregate(EntityID string, Type string, RootID string) ([]*Event, error) {
-	return nil, nil
+	return events, nil
 }
 
 //GetByAggregateAndType returns events given the entity id and the entity type.
@@ -361,93 +370,3 @@ func NewBasicEventRepositoryDynamo(dynamoDB *dynamodb.DynamoDB, logger Log, useU
 	}
 	return &EventRepositoryDynamo{DB: dynamoDB, logger: logger, AccountID: accountID, ApplicationID: applicationID}, nil
 }
-
-/*
-var dynamo *dynamodb.DynamoDB
-
-type TestEvent struct {
-	ID     string `dynamo:"event_id,hash"`
-	Name   string `dynamo:"name"`
-	Random string `dynamo:"Random"`
-}
-
-func init() {
-	dynamo = connectDynamo()
-}
-
-// connectDynamo returns a dynamoDB client
-func connectDynamo() (db *dynamodb.DynamoDB) {
-	return dynamodb.New(session.Must(session.NewSession(&aws.Config{
-		Endpoint: aws.String("http://localhost:8000"),
-		Region:   aws.String("us-east-1"),
-	})))
-}
-
-// CreateTable creates a table
-func CreateTable() error {
-	_, err := dynamo.CreateTable(&dynamodb.CreateTableInput{
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			{
-				AttributeName: aws.String("ID"),
-				AttributeType: aws.String("S"), // (S | N | B) for string, number, binary
-			},
-		},
-		KeySchema: []*dynamodb.KeySchemaElement{
-			{
-				AttributeName: aws.String("ID"),
-				KeyType:       aws.String("HASH"),
-			},
-		},
-		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(10),
-			WriteCapacityUnits: aws.Int64(10),
-		},
-		TableName: aws.String("Events"),
-	})
-
-	return err
-}
-
-// PutEvent inserts the struct TestEvent
-func PutEvent(event TestEvent) error {
-	_, err := dynamo.PutItem(&dynamodb.PutItemInput{
-		Item: map[string]*dynamodb.AttributeValue{
-			"ID": {
-				S: aws.String(event.ID),
-			},
-			"Name": {
-				S: aws.String(event.Name),
-			},
-			"Random": {
-				S: aws.String(event.Random),
-			},
-		},
-		TableName: aws.String("Events"),
-	})
-
-	return err
-}
-
-func GetEvent(id string) (event TestEvent, err error) {
-	result, err := dynamo.GetItem(&dynamodb.GetItemInput{
-		Key: map[string]*dynamodb.AttributeValue{
-			"ID": {
-				S: aws.String(id),
-			},
-		},
-		TableName: aws.String("Events"),
-	})
-
-	if err != nil {
-		return event, err
-	}
-
-	err = dynamodbattribute.UnmarshalMap(result.Item, &event)
-	if err != nil {
-		return event, err
-	}
-
-	return event, err
-
-}
-*/

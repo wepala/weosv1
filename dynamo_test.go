@@ -28,10 +28,10 @@ func TestDynamo_AddEvent(t *testing.T) {
 		t.Fatalf("error creating application '%s'", err)
 	}
 
-	generateEvents := make([]*weos.Event, 2000)
+	generateEvents := make([]*weos.Event, 1000)
 	entity := &weos.AggregateRoot{}
 
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 1000; i++ {
 
 		currValue := strconv.Itoa(i)
 
@@ -64,7 +64,7 @@ func TestDynamo_AddEvent(t *testing.T) {
 	//Check for events
 }
 
-func TestDynamo_GetByAggregate(t *testing.T) {
+func TestDynamo_GetByEntityAndAggregate(t *testing.T) {
 	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), true, "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
@@ -84,7 +84,7 @@ func TestDynamo_GetByAggregate(t *testing.T) {
 		currEvent += currValue
 
 		generateEvents[i] = &weos.Event{
-			ID:      currValue,
+			ID:      ksuid.New().String(),
 			Type:    currEvent,
 			Payload: nil,
 			Meta: weos.EventMeta{
@@ -103,7 +103,7 @@ func TestDynamo_GetByAggregate(t *testing.T) {
 		t.Fatalf("error persisting events '%s'", err)
 	}
 
-	output, err := eventRepository.GetByAggregate("1")
+	output, err := eventRepository.GetByEntityAndAggregate("batch id", "SomeType", "12345")
 	if err != nil {
 		t.Fatalf("error getting by aggregate '%s'", err)
 	}
@@ -112,34 +112,20 @@ func TestDynamo_GetByAggregate(t *testing.T) {
 		t.Fatalf("expected output to not be nil")
 	}
 
+	if output[0].ID != generateEvents[0].ID {
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[0].ID, output[0].ID)
+	}
+
+	if output[0].Type != generateEvents[0].Type {
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[0].Type, output[0].Type)
+	}
+
+	if output[3].ID != generateEvents[3].ID {
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[0].ID, output[0].ID)
+	}
+
+	if output[3].Type != generateEvents[3].Type {
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[0].Type, output[0].Type)
+	}
+
 }
-
-/*func TestDynamo_AddEvent(t *testing.T) {
-
-	testEvent := weos.TestEvent{
-		ID:     "3",
-		Name:   "Test Event 3",
-		Random: "12345",
-	}
-
-	err := weos.PutEvent(testEvent)
-	if err != nil {
-		t.Fatalf("error creating event '%s'", err)
-	}
-}
-
-func TestDynamo_GetEvent(t *testing.T) {
-
-	testEvent, err := weos.GetEvent("2")
-	if err != nil {
-		t.Fatalf("error creating event '%s'", err)
-	}
-
-	if testEvent.ID != "2" {
-		t.Fatalf("Expected test event ID to be '%s', got '%s'", "2", testEvent.ID)
-	}
-	if testEvent.Name != "Test Event 2" {
-		t.Fatalf("Expected test event name to be '%s', got '%s'", "Test Event 2", testEvent.Name)
-	}
-
-}*/
