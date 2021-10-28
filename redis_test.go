@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 		Image:        "redis",
 		Name:         "redis-mock",
 		ExposedPorts: []string{"6379:6379/tcp"},
-		Env:          map[string]string{"REDIS_DB_URL": "redis:6379", "REDIS_DB_PASSWORD": "pw123", "REDIS_DB": "0"},
+		Env:          map[string]string{"REDIS_DB_URL": "redis:6379", "REDIS_DB_PASSWORD": "", "REDIS_DB": "0"},
 		WaitingFor:   wait.ForLog("started"),
 	}
 	rContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 
 	database = redis.NewClient(&redis.Options{
 		Addr:     rEndpoint,
-		Password: "pw123",
+		Password: "",
 		DB:       0,
 	})
 	pong, err := database.Ping().Result()
