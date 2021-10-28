@@ -62,6 +62,7 @@ type Application interface {
 	ID() string
 	Title() string
 	DBConnection() *sql.DB
+	RedisDB() *redis.Client
 	DB() *gorm.DB
 	Logger() Log
 	AddProjection(projection Projection) error
@@ -81,6 +82,7 @@ type BaseApplication struct {
 	logger          Log
 	dbConnection    *sql.DB
 	db              *gorm.DB
+	redisDb         *redis.Client
 	config          *ApplicationConfig
 	projections     []Projection
 	eventRepository EventRepository
@@ -122,6 +124,10 @@ func (w *BaseApplication) Projections() []Projection {
 
 func (w *BaseApplication) DB() *gorm.DB {
 	return w.db
+}
+
+func (w *BaseApplication) RedisDB() *redis.Client {
+	return w.redisDb
 }
 
 func (w *BaseApplication) Migrate(ctx context.Context) error {
@@ -236,18 +242,20 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		case "postgres":
 			connStr = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 				config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.User, config.Database.Password, config.Database.Database)
-		default:
-			return nil, errors.New(fmt.Sprintf("db driver '%s' is not supported ", config.Database.Driver))
+		case "redis":
 		}
 
-		db, err = sql.Open(config.Database.Driver, connStr)
-		if err != nil {
-			logger.Errorf("connection string '%s'", connStr)
-			return nil, NewError(fmt.Sprintf("error setting up connection to database '%s' with connection '%s'", err, connStr), err)
-		}
+		if config.Database.Driver != "redis" {
 
-		db.SetMaxOpenConns(config.Database.MaxOpen)
-		db.SetMaxIdleConns(config.Database.MaxIdle)
+			db, err = sql.Open(config.Database.Driver, connStr)
+			if err != nil {
+				logger.Errorf("connection string '%s'", connStr)
+				return nil, NewError(fmt.Sprintf("error setting up connection to database '%s' with connection '%s'", err, connStr), err)
+			}
+
+			db.SetMaxOpenConns(config.Database.MaxOpen)
+			db.SetMaxIdleConns(config.Database.MaxIdle)
+		}
 
 	}
 
@@ -292,7 +300,6 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 			return nil, err
 		}
 	default:
-		return nil, errors.New(fmt.Sprintf("we don't support database driver '%s'", config.Database.Driver))
 	}
 
 	if client == nil {
@@ -300,27 +307,32 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 			Timeout: time.Second * 10,
 		}
 	}
-
+	//setting up redis database
+	var rDatabase *redis.Client
 	switch config.Database.Driver {
 	case "redis":
-		database := redis.NewClient(&redis.Options{
+		rDatabase = redis.NewClient(&redis.Options{
 			Addr:     "localhost:6379",
 			Password: "",
 			DB:       0,
 		})
 		if eventRepository == nil {
-			eventRepository, err = NewRedisEventRepository(database, logger, config.AccountID, config.ApplicationID)
+			eventRepository, err = NewRedisEventRepository(rDatabase, logger, config.AccountID, config.ApplicationID)
 			if err != nil {
 				return nil, err
 			}
 		}
 	default:
+		if gormDB == nil {
+			return nil, errors.New(fmt.Sprintf("we don't support database driver '%s'", config.Database.Driver))
+		}
 		if eventRepository == nil {
 			eventRepository, err = NewBasicEventRepository(gormDB, logger, false, config.AccountID, config.ApplicationID)
 			if err != nil {
 				return nil, err
 			}
 		}
+
 	}
 	return &BaseApplication{
 		id:              config.ModuleID,
@@ -328,6 +340,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		logger:          logger,
 		dbConnection:    db,
 		db:              gormDB,
+		redisDb:         rDatabase,
 		config:          config,
 		httpClient:      client,
 		eventRepository: eventRepository,

@@ -6,6 +6,7 @@ package weos_test
 import (
 	"context"
 	"database/sql"
+	"github.com/go-redis/redis"
 	"github.com/wepala/weos"
 	"gorm.io/gorm"
 	"net/http"
@@ -1360,6 +1361,9 @@ var _ weos.Application = &ApplicationMock{}
 // 			ProjectionsFunc: func() []weos.Projection {
 // 				panic("mock out the Projections method")
 // 			},
+// 			RedisDBFunc: func() *redis.Client {
+// 				panic("mock out the RedisDB method")
+// 			},
 // 			TitleFunc: func() string {
 // 				panic("mock out the Title method")
 // 			},
@@ -1403,6 +1407,9 @@ type ApplicationMock struct {
 	// ProjectionsFunc mocks the Projections method.
 	ProjectionsFunc func() []weos.Projection
 
+	// RedisDBFunc mocks the RedisDB method.
+	RedisDBFunc func() *redis.Client
+
 	// TitleFunc mocks the Title method.
 	TitleFunc func() string
 
@@ -1445,6 +1452,9 @@ type ApplicationMock struct {
 		// Projections holds details about calls to the Projections method.
 		Projections []struct {
 		}
+		// RedisDB holds details about calls to the RedisDB method.
+		RedisDB []struct {
+		}
 		// Title holds details about calls to the Title method.
 		Title []struct {
 		}
@@ -1460,6 +1470,7 @@ type ApplicationMock struct {
 	lockLogger          sync.RWMutex
 	lockMigrate         sync.RWMutex
 	lockProjections     sync.RWMutex
+	lockRedisDB         sync.RWMutex
 	lockTitle           sync.RWMutex
 }
 
@@ -1756,6 +1767,32 @@ func (mock *ApplicationMock) ProjectionsCalls() []struct {
 	mock.lockProjections.RLock()
 	calls = mock.calls.Projections
 	mock.lockProjections.RUnlock()
+	return calls
+}
+
+// RedisDB calls RedisDBFunc.
+func (mock *ApplicationMock) RedisDB() *redis.Client {
+	if mock.RedisDBFunc == nil {
+		panic("ApplicationMock.RedisDBFunc: method is nil but Application.RedisDB was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockRedisDB.Lock()
+	mock.calls.RedisDB = append(mock.calls.RedisDB, callInfo)
+	mock.lockRedisDB.Unlock()
+	return mock.RedisDBFunc()
+}
+
+// RedisDBCalls gets all the calls that were made to RedisDB.
+// Check the length with:
+//     len(mockedApplication.RedisDBCalls())
+func (mock *ApplicationMock) RedisDBCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockRedisDB.RLock()
+	calls = mock.calls.RedisDB
+	mock.lockRedisDB.RUnlock()
 	return calls
 }
 

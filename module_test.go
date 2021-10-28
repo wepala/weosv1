@@ -2,11 +2,12 @@ package weos_test
 
 import (
 	"database/sql"
+	"os"
+	"testing"
+
 	_ "github.com/proullon/ramsql/driver"
 	"github.com/wepala/weos"
 	"golang.org/x/net/context"
-	"os"
-	"testing"
 )
 
 func TestNewApplicationFromConfig(t *testing.T) {
@@ -251,4 +252,31 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 	}
 
 	//TODO confirm that the handler from the projection is added to the event repository IF one is configured
+}
+
+func TestNewApplicationFromConfig_Redis(t *testing.T) {
+	t.Run("test setting up basic redis connection", func(t *testing.T) {
+		redisConfig := &weos.ApplicationConfig{
+			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
+			Title:     "Test Module",
+			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
+			Database: &weos.DBConfig{
+				Driver: "redis",
+			},
+			Log: &weos.LogConfig{
+				Level:        "debug",
+				ReportCaller: false,
+				Formatter:    "text",
+			},
+		}
+
+		app, err := weos.NewApplicationFromConfig(redisConfig, nil, nil, nil, &EventRepositoryMock{})
+		if err != nil {
+			t.Fatalf("error encountered setting up app '%s'", err)
+		}
+
+		if app.RedisDB().Ping().Err() != nil {
+			t.Errorf("didn't expect errors pinging the database")
+		}
+	})
 }
