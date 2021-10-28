@@ -26,33 +26,6 @@ jobs:
         run: go test -v ./... -driver=redis -run TestEventRepositoryRedis 
       - name: Run unit tests
         run: go test -v ./...
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: "arn:aws:iam::582726374450:role/Administrator"
-          role-duration-seconds: 1200
-          role-session-name: sellwithwe${{ github.sha }}
-          role-skip-session-tagging: true
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Build and tag the image
-        run: |
-          docker build \
-            -t ${AWS_REGISTRY_URL}:${{ github.sha }} \
-            -t ${AWS_REGISTRY_URL}:${{ steps.setup.outputs.ticket }} \
-            --target app .
-      - name: Push to ECR
-        run: |
-          docker push ${AWS_REGISTRY_URL}:${{ github.sha }}
-          docker push ${AWS_REGISTRY_URL}:${{ steps.setup.outputs.ticket }}
-      - name: Update ECS service
-        run: |
-          aws ecs update-service --service sellwithwe${{ steps.setup.outputs.ticket }}-service --cluster ${AWS_CLUSTER_NAME} --force-new-deployment
-          dig prod1.weos.sh
       - name: Send success notification
         uses: rtCamp/action-slack-notify@v2
         env:
