@@ -4,7 +4,6 @@ package weos
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -239,26 +238,20 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		case "postgres":
 			connStr = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 				config.Database.Host, strconv.Itoa(config.Database.Port), config.Database.User, config.Database.Password, config.Database.Database)
-		case "dynamoDB":
-		default:
-			return nil, errors.New(fmt.Sprintf("db driver '%s' is not supported ", config.Database.Driver))
 		}
 
-		if config.Database.Driver != "dynamoDB" {
-			db, err = sql.Open(config.Database.Driver, connStr)
-			if err != nil {
-				logger.Errorf("connection string '%s'", connStr)
-				return nil, NewError(fmt.Sprintf("error setting up connection to database '%s' with connection '%s'", err, connStr), err)
-			}
-
-			db.SetMaxOpenConns(config.Database.MaxOpen)
-			db.SetMaxIdleConns(config.Database.MaxIdle)
+		db, err = sql.Open(config.Database.Driver, connStr)
+		if err != nil {
+			logger.Errorf("connection string '%s'", connStr)
+			return nil, NewError(fmt.Sprintf("error setting up connection to database '%s' with connection '%s'", err, connStr), err)
 		}
+
+		db.SetMaxOpenConns(config.Database.MaxOpen)
+		db.SetMaxIdleConns(config.Database.MaxIdle)
 	}
 
 	//setup gorm connection
 	var gormDB *gorm.DB
-	var dynamoDB *dynamodb.DynamoDB
 	switch config.Database.Driver {
 	case "postgres":
 		gormDB, err = gorm.Open(postgres.New(postgres.Config{
@@ -297,13 +290,6 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		if err != nil {
 			return nil, err
 		}
-	case "dyanmoDB":
-		dynamoDB = dynamodb.New(session.Must(session.NewSession(&aws.Config{
-			Endpoint: aws.String("http://localhost:8000"),
-			Region:   aws.String("us-east-1"),
-		})))
-	default:
-		return nil, errors.New(fmt.Sprintf("we don't support database driver '%s'", config.Database.Driver))
 	}
 
 	if client == nil {
@@ -313,7 +299,17 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 	}
 
 	//Do a switch(or if statement) for if its dynamodb
-	if config.Database.Driver != "dynamoDB" {
+	//Add default case to this switch
+
+	var dynamoDB *dynamodb.DynamoDB
+	switch config.Database.Driver {
+	case "dynamoDB":
+		//Sets the connection for dynamoDB
+		dynamoDB = dynamodb.New(session.Must(session.NewSession(&aws.Config{ //Make this configurable
+			Endpoint: aws.String("http://localhost:8000"),
+			Region:   aws.String("us-east-1"),
+		})))
+
 		if eventRepository == nil {
 			eventRepository, err = NewBasicEventRepositoryDynamo(dynamoDB, logger, false, config.AccountID, config.ApplicationID)
 			if err != nil {
@@ -321,7 +317,12 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 			}
 		}
 
-	} else {
+	default:
+		//This wont be nil if it was one of the gorm/sql cases above.
+		if gormDB == nil {
+			return nil, fmt.Errorf("we don't support database driver '%s'", config.Database.Driver)
+		}
+
 		if eventRepository == nil {
 			eventRepository, err = NewBasicEventRepository(gormDB, logger, false, config.AccountID, config.ApplicationID)
 			if err != nil {
