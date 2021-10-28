@@ -34,6 +34,7 @@ var err error
 var rDatabase *redis.Client
 
 func TestMain(m *testing.M) {
+	flag.Parse()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/custom_debug_path/profile", pprof.Profile)
 	log.Fatal(http.ListenAndServe(":7777", mux))
