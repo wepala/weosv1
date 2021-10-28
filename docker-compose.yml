@@ -10,7 +10,7 @@ services:
     image: redis
     environment:
       - REDIS_DB_URL=redis:6379
-      - REDIS_DB_PASSWORD=
+      - REDIS_DB_PASSWORD=pw123
       - REDIS_DB=0
     ports:
       - 8080:8080

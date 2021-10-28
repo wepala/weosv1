@@ -10,19 +10,50 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/wepala/weos"
 	"golang.org/x/net/context"
 )
 
 var database *redis.Client
 
-func TestMain(t *testing.M) {
+func TestMain(m *testing.M) {
 	//setup redis to run in docker
 	log.Infof("Started redis")
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "redis",
+		Name:         "redis-mock",
+		ExposedPorts: []string{"6379:6379/tcp"},
+		Env:          map[string]string{"REDIS_DB_URL": "redis:6379", "REDIS_DB_PASSWORD": "pw123", "REDIS_DB": "0"},
+		WaitingFor:   wait.ForLog("started"),
+	}
+	rContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		log.Fatalf("failed to start elastic search container '%s'", err)
+	}
+
+	defer rContainer.Terminate(ctx)
+
+	//get the endpoint that the container was run on
+	var endpoint string
+	endpoint, err = rContainer.Host(ctx) //didn't use the endpoint call because it returns "localhost" which the client doesn't seem to like
+	if err != nil {
+		log.Fatalf("error setting up redis '%s'", err)
+	}
+	cport, err := rContainer.MappedPort(ctx, "6379")
+	if err != nil {
+		log.Fatalf("error setting up redis '%s'", err)
+	}
+	rEndpoint := endpoint + ":" + cport.Port()
 
 	database = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
+		Addr:     rEndpoint,
+		Password: "pw123",
 		DB:       0,
 	})
 	pong, err := database.Ping().Result()
@@ -34,7 +65,7 @@ func TestMain(t *testing.M) {
 		panic("no pong received")
 	}
 
-	code := t.Run()
+	code := m.Run()
 	os.Exit(code)
 }
 
