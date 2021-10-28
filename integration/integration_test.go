@@ -29,7 +29,7 @@ import (
 
 var db *sql.DB
 var gormDB *gorm.DB
-var database = flag.String("database", "redis", "run database integration tests")
+var driver = flag.String("driver", "redis", "run database integration tests")
 var err error
 var rDatabase *redis.Client
 
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 	mux.HandleFunc("/custom_debug_path/profile", pprof.Profile)
 	log.Fatal(http.ListenAndServe(":7777", mux))
 	flag.Parse()
-	switch *database {
+	switch *driver {
 	case "postgres":
 		// uses a sensible default on windows (tcp/http) and linux/osx (socket)
 		pool, err := dockertest.NewPool("")
@@ -81,7 +81,7 @@ func TestMain(m *testing.M) {
 
 		os.Exit(code)
 	case "sqlite3":
-		db, err = sql.Open(*database, "test.db")
+		db, err = sql.Open(*driver, "test.db")
 		if err != nil {
 			log.Fatalf("failed to create sqlite database '%s'", err)
 		}

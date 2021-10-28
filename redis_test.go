@@ -2,6 +2,7 @@ package weos_test
 
 import (
 	"encoding/json"
+	"flag"
 	"os"
 	"strconv"
 	"testing"
@@ -17,56 +18,60 @@ import (
 )
 
 var database *redis.Client
+var driver = flag.String("driver", "redis", "run database integration tests")
 
 func TestMain(m *testing.M) {
-	//setup redis to run in docker
-	log.Infof("Started redis")
-	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "redis",
-		Name:         "redis-mock",
-		ExposedPorts: []string{"6379:6379/tcp"},
-		Env:          map[string]string{"REDIS_DB_URL": "redis:6379", "REDIS_DB_PASSWORD": "", "REDIS_DB": "0"},
-		WaitingFor:   wait.ForLog("started"),
-	}
-	rContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		log.Fatalf("failed to start elastic search container '%s'", err)
-	}
+	if *driver == "redis" {
 
-	defer rContainer.Terminate(ctx)
+		//setup redis to run in docker
+		log.Infof("Started redis")
+		ctx := context.Background()
+		req := testcontainers.ContainerRequest{
+			Image:        "redis",
+			Name:         "redis-mock",
+			ExposedPorts: []string{"6379:6379/tcp"},
+			Env:          map[string]string{"REDIS_DB_URL": "redis:6379", "REDIS_DB_PASSWORD": "", "REDIS_DB": "0"},
+			WaitingFor:   wait.ForLog("started"),
+		}
+		rContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		})
+		if err != nil {
+			log.Fatalf("failed to start elastic search container '%s'", err)
+		}
 
-	//get the endpoint that the container was run on
-	var endpoint string
-	endpoint, err = rContainer.Host(ctx) //didn't use the endpoint call because it returns "localhost" which the client doesn't seem to like
-	if err != nil {
-		log.Fatalf("error setting up redis '%s'", err)
-	}
-	cport, err := rContainer.MappedPort(ctx, "6379")
-	if err != nil {
-		log.Fatalf("error setting up redis '%s'", err)
-	}
-	rEndpoint := endpoint + ":" + cport.Port()
+		defer rContainer.Terminate(ctx)
 
-	database = redis.NewClient(&redis.Options{
-		Addr:     rEndpoint,
-		Password: "",
-		DB:       0,
-	})
-	pong, err := database.Ping().Result()
-	if err != nil {
-		panic(err)
-	}
+		//get the endpoint that the container was run on
+		var endpoint string
+		endpoint, err = rContainer.Host(ctx) //didn't use the endpoint call because it returns "localhost" which the client doesn't seem to like
+		if err != nil {
+			log.Fatalf("error setting up redis '%s'", err)
+		}
+		cport, err := rContainer.MappedPort(ctx, "6379")
+		if err != nil {
+			log.Fatalf("error setting up redis '%s'", err)
+		}
+		rEndpoint := endpoint + ":" + cport.Port()
 
-	if pong == "" {
-		panic("no pong received")
-	}
+		database = redis.NewClient(&redis.Options{
+			Addr:     rEndpoint,
+			Password: "",
+			DB:       0,
+		})
+		pong, err := database.Ping().Result()
+		if err != nil {
+			panic(err)
+		}
 
-	code := m.Run()
-	os.Exit(code)
+		if pong == "" {
+			panic("no pong received")
+		}
+
+		code := m.Run()
+		os.Exit(code)
+	}
 }
 
 func TestRedis_NewRedisEvent(t *testing.T) {
