@@ -69,7 +69,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestNewRedisEvent(t *testing.T) {
+func TestEventRepositoryRedis_NewRedisEvent(t *testing.T) {
 	event := &weos.Event{
 		ID:      "event1",
 		Type:    "type2",
@@ -117,7 +117,7 @@ func TestNewRedisEvent(t *testing.T) {
 	}
 }
 
-func TestPersist(t *testing.T) {
+func TestEventRepositoryRedis_Persist(t *testing.T) {
 
 	eventRepository, err := weos.NewRedisEventRepository(database, log.New(), "restaurant", "applicationID")
 	if err != nil {
@@ -195,7 +195,7 @@ func TestPersist(t *testing.T) {
 	}
 }
 
-func TestGetByEntityAndAggregate(t *testing.T) {
+func TestEventRepositoryRedis_GetByEntityAndAggregate(t *testing.T) {
 
 	t.Run("get aggregate with 1 event ", func(t *testing.T) {
 		eventRepository, err := weos.NewRedisEventRepository(database, log.New(), "store", "applicationID")
@@ -449,7 +449,7 @@ func TestGetByEntityAndAggregate(t *testing.T) {
 	})
 }
 
-func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
+func TestEventRepositoryRedis_BatchPersist(t *testing.T) {
 
 	eventRepository, err := weos.NewRedisEventRepository(database, log.New(), "root123", "applicationID")
 	if err != nil {
