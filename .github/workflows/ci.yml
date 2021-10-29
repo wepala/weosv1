@@ -23,13 +23,13 @@ jobs:
         with:
           go-version: 1.16.x
       - name: Run Sqlite3 tests
-        run: go test -v ./... -database=sqlite3 -run TestEventRepositoryGorm 
+        run: go test -v ./... -driver=sqlite3 -run TestEventRepositoryGorm 
       - name: Run Postgres tests
-        run: go test -v ./... -database=postgres -run TestEventRepositoryGorm
+        run: go test -v ./... -driver=postgres -run TestEventRepositoryGorm
       - name: Run Mysql tests
-        run: go test -v ./... -database=mysql -run TestEventRepositoryGorm
+        run: go test -v ./... -driver=mysql -run TestEventRepositoryGorm
       - name: Run Redis tests
-        run: go test -v ./... -database=redis -run TestEventRepositoryRedis
+        run: go test -v ./... -driver=redis -run TestEventRepositoryRedis
       - name: Send success notification
         uses: rtCamp/action-slack-notify@v2
         env:
