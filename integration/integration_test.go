@@ -133,7 +133,7 @@ func TestMain(m *testing.M) {
 			Image:        "amazon/dynamodb-local:latest",
 			Name:         "dynamodb-local",
 			ExposedPorts: []string{"8000:8000/tcp"},
-			Env:          map[string]string{"AWS_ACCESS_KEY_ID": "fakeMyKeyId", "AWS_SECRET_ACCESS_KEY": "fakeSecretAccessKey"},
+			//Env:          map[string]string{"AWS_ACCESS_KEY_ID": "fakeMyKeyId", "AWS_SECRET_ACCESS_KEY": "fakeSecretAccessKey"},
 		}
 		dynamoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
