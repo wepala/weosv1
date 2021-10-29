@@ -27,13 +27,13 @@ import (
 
 var db *sql.DB
 var gormDB *gorm.DB
-var driver = flag.String("driver", "redis", "run database integration tests")
+var database = flag.String("database", "redis", "run database integration tests")
 var err error
 var rDatabase *redis.Client
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	switch *driver {
+	switch *database {
 	case "postgres":
 		// uses a sensible default on windows (tcp/http) and linux/osx (socket)
 		pool, err := dockertest.NewPool("")
@@ -75,7 +75,7 @@ func TestMain(m *testing.M) {
 
 		os.Exit(code)
 	case "sqlite3":
-		db, err = sql.Open(*driver, "test.db")
+		db, err = sql.Open(*database, "test.db")
 		if err != nil {
 			log.Fatalf("failed to create sqlite database '%s'", err)
 		}
@@ -417,7 +417,7 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 
 	var rows *sql.Rows
 
-	if *driver == "mysql" {
+	if *database == "mysql" {
 		rows, err = db.Query("SELECT entity_id,type, root_id,application_id,sequence_no FROM gorm_events WHERE entity_id  = ? ORDER BY sequence_no ASC", "batch id")
 		if err != nil {
 			t.Fatalf("error retrieving events '%s'", err)
@@ -433,7 +433,7 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 	var rowInfo QueryResults
 	var queryRows []QueryResults
 
-	if *driver == "mysql" {
+	if *database == "mysql" {
 		for rows.Next() {
 			err = rows.Scan(&rowInfo.entityID, &rowInfo.eventType, &rowInfo.accountID, &rowInfo.applicationID, &rowInfo.sequenceNo)
 			if err != nil {
