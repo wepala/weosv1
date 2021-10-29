@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/ory/dockertest/v3"
@@ -148,10 +147,10 @@ func TestMain(m *testing.M) {
 
 		sess, err := session.NewSession(&aws.Config{
 			Region: aws.String("us-east-1"),
-			Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
+			/*Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
 				AccessKeyID:     *aws.String("fakeMyKeyId"),
 				SecretAccessKey: *aws.String("fakeSecretAccessKey"),
-			}),
+			}),*/
 			Endpoint: aws.String("http://localhost:8000"),
 		})
 		if err != nil {
