@@ -27,7 +27,7 @@ import (
 
 var db *sql.DB
 var gormDB *gorm.DB
-var database = flag.String("database", "", "run database integration tests")
+var database = flag.String("driver", "redis", "run database integration tests")
 var err error
 var rDatabase *redis.Client
 
