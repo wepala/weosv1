@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"golang.org/x/net/context"
@@ -28,7 +27,6 @@ type EventRepositoryDynamo struct {
 	DB              *dynamodb.DynamoDB
 	eventDispatcher EventDisptacher
 	logger          Log
-	unitOfWork      bool
 	AccountID       string
 	ApplicationID   string
 	GroupID         string
@@ -47,53 +45,12 @@ type DynamoEvent struct {
 	SequenceNo    int64
 }
 
-var dynamo *dynamodb.DynamoDB
-
-func init() {
-	dynamo = connectDynamo()
-}
-
 // connectDynamo returns a dynamoDB client
-func connectDynamo() (db *dynamodb.DynamoDB) {
+/*func connectDynamo() (db *dynamodb.DynamoDB) {
 	return dynamodb.New(session.Must(session.NewSession(&aws.Config{
 		Endpoint: aws.String("http://localhost:8000"),
 		Region:   aws.String("us-east-1"),
 	})))
-}
-
-// CreateTable creates a table
-/*func CreateTable() error {
-	_, err := dynamo.CreateTable(&dynamodb.CreateTableInput{
-		TableName: aws.String(TABLE_NAME),
-		// PK - ConcatKey + Seq No
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			{
-				//Rename to PartitionKey - ConcatKey
-				AttributeName: aws.String("PartitionKey"),
-				AttributeType: aws.String("S"), // (S | N | B) for string, number, binary
-			},
-			{
-				AttributeName: aws.String("SortKey"),
-				AttributeType: aws.String("N"), // (S | N | B) for string, number, binary
-			},
-		},
-		KeySchema: []*dynamodb.KeySchemaElement{
-			{
-				AttributeName: aws.String("PartitionKey"),
-				KeyType:       aws.String("HASH"),
-			},
-			{
-				AttributeName: aws.String("SortKey"),
-				KeyType:       aws.String("Range"),
-			},
-		},
-		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(10),
-			WriteCapacityUnits: aws.Int64(10),
-		},
-	})
-
-	return err
 }*/
 
 func NewDynamoEvent(event *Event) (DynamoEvent, error) {
@@ -292,6 +249,7 @@ func (d *EventRepositoryDynamo) Migrate(ctx context.Context) error {
 	existingTables, err := d.DB.ListTables(
 		&dynamodb.ListTablesInput{
 			ExclusiveStartTableName: aws.String(TABLE_NAME),
+			Limit:                   aws.Int64(1),
 		},
 	)
 	if err != nil {
@@ -407,11 +365,6 @@ func (d *EventRepositoryDynamo) GetByAggregateAndType(ID string, entityType stri
 	return nil, nil
 }
 
-func NewBasicEventRepositoryDynamo(dynamoDB *dynamodb.DynamoDB, logger Log, useUnitOfWork bool, accountID string, applicationID string) (EventRepository, error) {
-	if useUnitOfWork {
-		//Not sure what's the equivalent or gormDB.Begin()
-		transaction := connectDynamo()
-		return &EventRepositoryDynamo{DB: transaction, logger: logger, unitOfWork: useUnitOfWork, AccountID: accountID, ApplicationID: applicationID}, nil
-	}
+func NewBasicEventRepositoryDynamo(dynamoDB *dynamodb.DynamoDB, logger Log, accountID string, applicationID string) (EventRepository, error) {
 	return &EventRepositoryDynamo{DB: dynamoDB, logger: logger, AccountID: accountID, ApplicationID: applicationID}, nil
 }

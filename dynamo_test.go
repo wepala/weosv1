@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/segmentio/ksuid"
@@ -46,10 +47,10 @@ func TestMain(m *testing.M) {
 
 		sess, err := session.NewSession(&aws.Config{
 			Region: aws.String("us-east-1"),
-			/*Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
+			Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
 				AccessKeyID:     *aws.String("fakeMyKeyId"),
 				SecretAccessKey: *aws.String("fakeSecretAccessKey"),
-			}),*/
+			}),
 			Endpoint: aws.String("http://localhost:8000"),
 		})
 		if err != nil {
@@ -59,14 +60,13 @@ func TestMain(m *testing.M) {
 
 		code := m.Run()
 
-		//os.Remove("shared-local-instance.db")
 		os.Exit(code)
 	}
 }
 
 func TestDynamo_AddEvent(t *testing.T) {
 
-	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), false, "accountID", "applicationID")
+	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
 	}
@@ -108,12 +108,10 @@ func TestDynamo_AddEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error persisting events '%s'", err)
 	}
-
-	//Check for events
 }
 
 func TestDynamo_GetByEntityAndAggregate(t *testing.T) {
-	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), false, "accountID", "applicationID")
+	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
 	}
@@ -121,6 +119,12 @@ func TestDynamo_GetByEntityAndAggregate(t *testing.T) {
 	err = eventRepository.(*weos.EventRepositoryDynamo).Migrate(context.Background())
 	if err != nil {
 		t.Fatalf("error setting up application'%s'", err)
+	}
+
+	//2nd call for if the table exists
+	err2 := eventRepository.(*weos.EventRepositoryDynamo).Migrate(context.Background())
+	if err2 != nil {
+		t.Fatalf("error setting up application'%s'", err2)
 	}
 
 	generateEvents := make([]*weos.Event, 5)
