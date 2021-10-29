@@ -31,11 +31,8 @@ func TestMain(m *testing.M) {
 			Name:         "dynamodb-local",
 			ExposedPorts: []string{"8000:8000/tcp"},
 			Env:          map[string]string{"AWS_ACCESS_KEY_ID": "fakeMyKeyId", "AWS_SECRET_ACCESS_KEY": "fakeSecretAccessKey"},
-			//WaitingFor:   wait.ForLog("Started DynamoDB"),
-			//Cmd:          []string{"java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -dbPath ./data"},
-
 		}
-		esContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		dynamoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
 		})
@@ -43,7 +40,7 @@ func TestMain(m *testing.M) {
 			log.Fatalf("failed to start dynamo db container '%s'", err)
 		}
 
-		defer esContainer.Terminate(ctx)
+		defer dynamoContainer.Terminate(ctx)
 
 		sess, err := session.NewSession(&aws.Config{
 			Region: aws.String("us-east-1"),
