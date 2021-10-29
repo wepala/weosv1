@@ -289,7 +289,20 @@ func (d *EventRepositoryDynamo) Flush() error {
 
 //TODO - This needs work. (I just copied and pasted the create table func.)
 func (d *EventRepositoryDynamo) Migrate(ctx context.Context) error {
-	_, err := d.DB.CreateTable(&dynamodb.CreateTableInput{
+	existingTables, err := d.DB.ListTables(
+		&dynamodb.ListTablesInput{
+			ExclusiveStartTableName: aws.String(TABLE_NAME),
+		},
+	)
+	if err != nil {
+		return err
+	}
+	//Checks if the table exists before attempting to create it
+	if len(existingTables.TableNames) != 0 {
+		return nil
+	}
+
+	_, err = d.DB.CreateTable(&dynamodb.CreateTableInput{
 		TableName: aws.String(TABLE_NAME),
 		// PK - ConcatKey + Seq No
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{

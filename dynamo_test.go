@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/wepala/weos"
 	"golang.org/x/net/context"
 )
@@ -23,24 +23,33 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	switch *database {
 	case "dynamoDB":
-		/*// uses a sensible default on windows (tcp/http) and linux/osx (socket)
-		pool, err := dockertest.NewPool("")
+		log.Infof("Started DynamoDB")
+		ctx := context.Background()
+		req := testcontainers.ContainerRequest{
+			Image:        "amazon/dynamodb-local:latest",
+			Name:         "dynamodb-local",
+			ExposedPorts: []string{"8000:8000/tcp"},
+			Env:          map[string]string{"AWS_ACCESS_KEY_ID": "fakeMyKeyId", "AWS_SECRET_ACCESS_KEY": "fakeSecretAccessKey"},
+			//WaitingFor:   wait.ForLog("Started DynamoDB"),
+			//Cmd:          []string{"java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -dbPath ./data"},
+
+		}
+		esContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		})
 		if err != nil {
-			log.Fatalf("Could not connect to docker: %s", err.Error())
+			log.Fatalf("failed to start dynamo db container '%s'", err)
 		}
 
-		// pulls an image, creates a container based on it and runs it
-		_, err = pool.Run("dynamoDB", "3.8", []string{"AWS_ACCESS_KEY_ID: fakeMyKeyId", "AWS_SECRET_ACCESS_KEY: fakeSecretAccessKey"})
-		if err != nil {
-			log.Fatalf("Could not start resource: %s", err.Error())
-		}*/
+		defer esContainer.Terminate(ctx)
 
 		sess, err := session.NewSession(&aws.Config{
 			Region: aws.String("us-east-1"),
-			Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
+			/*Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
 				AccessKeyID:     *aws.String("fakeMyKeyId"),
 				SecretAccessKey: *aws.String("fakeSecretAccessKey"),
-			}),
+			}),*/
 			Endpoint: aws.String("http://localhost:8000"),
 		})
 		if err != nil {
@@ -55,14 +64,6 @@ func TestMain(m *testing.M) {
 	}
 }
 
-/*func TestDynamo_CreateTable(t *testing.T) {
-
-	err := weos.CreateTable()
-	if err != nil {
-		t.Fatalf("error creating table '%s'", err)
-	}
-}*/
-
 func TestDynamo_AddEvent(t *testing.T) {
 
 	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), false, "accountID", "applicationID")
@@ -75,10 +76,10 @@ func TestDynamo_AddEvent(t *testing.T) {
 		t.Fatalf("error setting up application'%s'", err)
 	}
 
-	generateEvents := make([]*weos.Event, 1000)
+	generateEvents := make([]*weos.Event, 50000)
 	entity := &weos.AggregateRoot{}
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 50000; i++ {
 
 		currValue := strconv.Itoa(i)
 
@@ -173,11 +174,11 @@ func TestDynamo_GetByEntityAndAggregate(t *testing.T) {
 	}
 
 	if output[3].ID != generateEvents[3].ID {
-		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[0].ID, output[0].ID)
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[3].ID, output[3].ID)
 	}
 
 	if output[3].Type != generateEvents[3].Type {
-		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[0].Type, output[0].Type)
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[3].Type, output[3].Type)
 	}
 
 }
