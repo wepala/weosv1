@@ -311,7 +311,7 @@ var NewApplicationFromConfig = func(config *ApplicationConfig, logger Log, db *s
 		})))
 
 		if eventRepository == nil {
-			eventRepository, err = NewBasicEventRepositoryDynamo(dynamoDB, logger, false, config.AccountID, config.ApplicationID)
+			eventRepository, err = NewBasicEventRepositoryDynamo(dynamoDB, logger, config.AccountID, config.ApplicationID)
 			if err != nil {
 				return nil, err
 			}
