@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"net/http"
-	"net/http/pprof"
 	"os"
 
 	"strconv"
@@ -34,10 +32,6 @@ var err error
 var rDatabase *redis.Client
 
 func TestMain(m *testing.M) {
-	flag.Parse()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/custom_debug_path/profile", pprof.Profile)
-	log.Fatal(http.ListenAndServe(":7777", mux))
 	flag.Parse()
 	switch *driver {
 	case "postgres":
