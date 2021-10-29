@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/ory/dockertest/v3"
@@ -133,7 +134,7 @@ func TestMain(m *testing.M) {
 			Image:        "amazon/dynamodb-local:latest",
 			Name:         "dynamodb-local",
 			ExposedPorts: []string{"8000:8000/tcp"},
-			//Env:          map[string]string{"AWS_ACCESS_KEY_ID": "fakeMyKeyId", "AWS_SECRET_ACCESS_KEY": "fakeSecretAccessKey"},
+			Env:          map[string]string{"AWS_ACCESS_KEY_ID": "fakeMyKeyId", "AWS_SECRET_ACCESS_KEY": "fakeSecretAccessKey"},
 		}
 		dynamoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
@@ -147,10 +148,10 @@ func TestMain(m *testing.M) {
 
 		sess, err := session.NewSession(&aws.Config{
 			Region: aws.String("us-east-1"),
-			/*Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
-				AccessKeyID:     *aws.String("fakeMyKeyId"),
-				SecretAccessKey: *aws.String("fakeSecretAccessKey"),
-			}),*/
+			Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
+				AccessKeyID:     "fakeMyKeyId",
+				SecretAccessKey: "fakeSecretAccessKey",
+			}),
 			Endpoint: aws.String("http://localhost:8000"),
 		})
 		if err != nil {
