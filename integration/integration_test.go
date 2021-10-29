@@ -152,8 +152,7 @@ func TestMain(m *testing.M) {
 				AccessKeyID:     "fakeMyKeyId",
 				SecretAccessKey: "fakeSecretAccessKey",
 			}),
-			//Endpoint: aws.String("http://localhost:8000"),
-			EnableEndpointDiscovery: aws.Bool(true),
+			Endpoint: aws.String("http://localhost:8000"),
 		})
 		if err != nil {
 			log.Fatalf("Could not setup dynamoDB: %s", err.Error())
