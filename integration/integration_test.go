@@ -28,6 +28,7 @@ var db *sql.DB
 var gormDB *gorm.DB
 var dynamoDB *dynamodb.DynamoDB
 var driver = flag.String("driver", "dynamoDB", "run database integration tests")
+var dynamoEndpoint string
 var err error
 
 func TestMain(m *testing.M) {
@@ -146,15 +147,21 @@ func TestMain(m *testing.M) {
 
 		defer dynamoContainer.Terminate(ctx)
 
+		var endpoint string
+		dynamoEndpoint, err = dynamoContainer.Host(ctx) //didn't use the endpoint call because it returns "localhost" which the client doesn't seem to like
+		cport, err := dynamoContainer.MappedPort(ctx, "8000")
+		if err != nil {
+			log.Fatalf("error setting up elasticsearch '%s'", err)
+		}
+		dynamoEndpoint = "http://" + endpoint + ":" + cport.Port()
+
 		sess, err := session.NewSession(&aws.Config{
 			Region: aws.String("us-east-1"),
 			Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
 				AccessKeyID:     "fakeMyKeyId",
 				SecretAccessKey: "fakeSecretAccessKey",
 			}),
-			Endpoint: aws.String("http://localhost:8000"),
-			//EnableEndpointDiscovery: aws.Bool(true),
-			DisableSSL: aws.Bool(true),
+			Endpoint: aws.String(dynamoEndpoint),
 		})
 		if err != nil {
 			log.Fatalf("Could not setup dynamoDB: %s", err.Error())
