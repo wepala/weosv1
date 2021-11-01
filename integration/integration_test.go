@@ -147,13 +147,13 @@ func TestMain(m *testing.M) {
 
 		defer dynamoContainer.Terminate(ctx)
 
-		var endpoint string
+		var dynamoEndpoint string
 		dynamoEndpoint, err = dynamoContainer.Host(ctx) //didn't use the endpoint call because it returns "localhost" which the client doesn't seem to like
 		cport, err := dynamoContainer.MappedPort(ctx, "8000")
 		if err != nil {
 			log.Fatalf("error setting up elasticsearch '%s'", err)
 		}
-		dynamoEndpoint = "http://" + endpoint + ":" + cport.Port()
+		dynamoEndpoint = "http://" + dynamoEndpoint + ":" + cport.Port()
 
 		sess, err := session.NewSession(&aws.Config{
 			Region: aws.String("us-east-1"),
