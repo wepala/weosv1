@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type EventRepositoryGorm struct {
@@ -52,6 +53,37 @@ func NewGormEvent(event *Event) (GormEvent, error) {
 		User:          event.Meta.User,
 		SequenceNo:    event.Meta.SequenceNo,
 	}, nil
+}
+
+func SetGormLevel(ctxt context.Context) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if ctxt != nil {
+			level := GetLogLevel(ctxt)
+			switch level {
+			case "debug":
+				return db.Session(&gorm.Session{
+					Logger: db.Logger.LogMode(logger.Info),
+				})
+			case "info":
+				return db.Session(&gorm.Session{
+					Logger: db.Logger.LogMode(logger.Info),
+				})
+			case "warn":
+				return db.Session(&gorm.Session{
+					Logger: db.Logger.LogMode(logger.Warn),
+				})
+			case "error":
+				return db.Session(&gorm.Session{
+					Logger: db.Logger.LogMode(logger.Error),
+				})
+			default:
+				return db.Session(&gorm.Session{
+					Logger: db.Logger.LogMode(logger.Silent),
+				})
+			}
+		}
+		return db
+	}
 }
 
 func (e *EventRepositoryGorm) Persist(ctxt context.Context, entity AggregateInterface) error {
