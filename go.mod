@@ -1,6 +1,6 @@
 module github.com/wepala/weos
 
-go 1.13
+go 1.16
 
 require (
 	github.com/lib/pq v1.3.0
