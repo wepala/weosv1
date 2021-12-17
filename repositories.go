@@ -55,7 +55,7 @@ func NewGormEvent(event *Event) (GormEvent, error) {
 	}, nil
 }
 
-func SetGormLevel(ctxt context.Context) func(db *gorm.DB) *gorm.DB {
+func WeOSConfig(ctxt context.Context) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if ctxt != nil {
 			level := GetLogLevel(ctxt)
