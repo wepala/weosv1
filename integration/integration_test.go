@@ -8,9 +8,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/ory/dockertest/v3"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/wepala/weos"
 	"golang.org/x/net/context"
 	"gorm.io/driver/mysql"
@@ -21,12 +26,14 @@ import (
 
 var db *sql.DB
 var gormDB *gorm.DB
-var database = flag.String("database", "sqlite3", "run database integration tests")
+var dynamoDB *dynamodb.DynamoDB
+var driver = flag.String("driver", "dynamoDB", "run database integration tests")
+var dynamoEndpoint string
 var err error
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	switch *database {
+	switch *driver {
 	case "postgres":
 		// uses a sensible default on windows (tcp/http) and linux/osx (socket)
 		pool, err := dockertest.NewPool("")
@@ -68,7 +75,7 @@ func TestMain(m *testing.M) {
 
 		os.Exit(code)
 	case "sqlite3":
-		db, err = sql.Open(*database, "test.db")
+		db, err = sql.Open(*driver, "test.db")
 		if err != nil {
 			log.Fatalf("failed to create sqlite database '%s'", err)
 		}
@@ -120,6 +127,49 @@ func TestMain(m *testing.M) {
 		if err := pool.Purge(resource); err != nil {
 			log.Fatalf("Could not purge resource: %s", err.Error())
 		}
+		os.Exit(code)
+	case "dynamoDB":
+		log.Infof("Started DynamoDB")
+		ctx := context.Background()
+		req := testcontainers.ContainerRequest{
+			Image:        "amazon/dynamodb-local:latest",
+			Name:         "dynamodb-local",
+			ExposedPorts: []string{"8000:8000/tcp"},
+			Env:          map[string]string{"AWS_ACCESS_KEY_ID": "fakeMyKeyId", "AWS_SECRET_ACCESS_KEY": "fakeSecretAccessKey"},
+		}
+		dynamoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		})
+		if err != nil {
+			log.Fatalf("failed to start dynamo db container '%s'", err)
+		}
+
+		defer dynamoContainer.Terminate(ctx)
+
+		var dynamoEndpoint string
+		dynamoEndpoint, err = dynamoContainer.Host(ctx) //didn't use the endpoint call because it returns "localhost" which the client doesn't seem to like
+		cport, err := dynamoContainer.MappedPort(ctx, "8000")
+		if err != nil {
+			log.Fatalf("error setting up elasticsearch '%s'", err)
+		}
+		dynamoEndpoint = "http://" + dynamoEndpoint + ":" + cport.Port()
+
+		sess, err := session.NewSession(&aws.Config{
+			Region: aws.String("us-east-1"),
+			Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
+				AccessKeyID:     "fakeMyKeyId",
+				SecretAccessKey: "fakeSecretAccessKey",
+			}),
+			Endpoint: aws.String(dynamoEndpoint),
+		})
+		if err != nil {
+			log.Fatalf("Could not setup dynamoDB: %s", err.Error())
+		}
+		dynamoDB = dynamodb.New(sess)
+
+		code := m.Run()
+
 		os.Exit(code)
 	}
 
@@ -361,7 +411,7 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 
 	var rows *sql.Rows
 
-	if *database == "mysql" {
+	if *driver == "mysql" {
 		rows, err = db.Query("SELECT entity_id,type, root_id,application_id,sequence_no FROM gorm_events WHERE entity_id  = ? ORDER BY sequence_no ASC", "batch id")
 		if err != nil {
 			t.Fatalf("error retrieving events '%s'", err)
@@ -377,7 +427,7 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 	var rowInfo QueryResults
 	var queryRows []QueryResults
 
-	if *database == "mysql" {
+	if *driver == "mysql" {
 		for rows.Next() {
 			err = rows.Scan(&rowInfo.entityID, &rowInfo.eventType, &rowInfo.accountID, &rowInfo.applicationID, &rowInfo.sequenceNo)
 			if err != nil {
@@ -409,4 +459,121 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 			t.Errorf("expected the module id to be '%s', got '%s'", "applicationID", queryRows[i].applicationID)
 		}
 	}
+}
+
+func TestEventRepositoryDynamo_AddEvent(t *testing.T) {
+
+	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), "accountID", "applicationID")
+	if err != nil {
+		t.Fatalf("error creating application '%s'", err)
+	}
+
+	err = eventRepository.(*weos.EventRepositoryDynamo).Migrate(context.Background())
+	if err != nil {
+		t.Fatalf("error setting up application'%s'", err)
+	}
+
+	generateEvents := make([]*weos.Event, 50000)
+	entity := &weos.AggregateRoot{}
+
+	for i := 0; i < 50000; i++ {
+
+		currValue := strconv.Itoa(i)
+
+		currEvent := "TEST_EVENT "
+		currID := "batch id"
+		currType := "SomeType"
+
+		currEvent += currValue
+
+		generateEvents[i] = &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    currEvent,
+			Payload: nil,
+			Meta: weos.EventMeta{
+				EntityID:   currID,
+				EntityType: currType,
+				SequenceNo: 0,
+			},
+			Version: 1,
+		}
+
+		entity.NewChange(generateEvents[i])
+	}
+
+	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "12345"), entity)
+	if err != nil {
+		t.Fatalf("error persisting events '%s'", err)
+	}
+}
+
+func TestEventRepositoryDynamo_GetByEntityAndAggregate(t *testing.T) {
+	eventRepository, err := weos.NewBasicEventRepositoryDynamo(dynamoDB, log.New(), "accountID", "applicationID")
+	if err != nil {
+		t.Fatalf("error creating application '%s'", err)
+	}
+
+	err = eventRepository.(*weos.EventRepositoryDynamo).Migrate(context.Background())
+	if err != nil {
+		t.Fatalf("error setting up application'%s'", err)
+	}
+
+	generateEvents := make([]*weos.Event, 5)
+	entity := &weos.AggregateRoot{}
+
+	for i := 0; i < 5; i++ {
+
+		currValue := strconv.Itoa(i)
+
+		currEvent := "TEST_EVENT "
+		currID := "batch id"
+		currType := "SomeType"
+
+		currEvent += currValue
+
+		generateEvents[i] = &weos.Event{
+			ID:      ksuid.New().String(),
+			Type:    currEvent,
+			Payload: nil,
+			Meta: weos.EventMeta{
+				EntityID:   currID,
+				EntityType: currType,
+				SequenceNo: 0,
+			},
+			Version: 1,
+		}
+
+		entity.NewChange(generateEvents[i])
+	}
+
+	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "12345"), entity)
+	if err != nil {
+		t.Fatalf("error persisting events '%s'", err)
+	}
+
+	output, err := eventRepository.GetByEntityAndAggregate("batch id", "SomeType", "12345")
+	if err != nil {
+		t.Fatalf("error getting by aggregate '%s'", err)
+	}
+
+	if output == nil {
+		t.Fatalf("expected output to not be nil")
+	}
+
+	if output[0].ID != generateEvents[0].ID {
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[0].ID, output[0].ID)
+	}
+
+	if output[0].Type != generateEvents[0].Type {
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[0].Type, output[0].Type)
+	}
+
+	if output[3].ID != generateEvents[3].ID {
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[3].ID, output[3].ID)
+	}
+
+	if output[3].Type != generateEvents[3].Type {
+		t.Fatalf("error getting by aggregate: expected '%s' but got '%s'", generateEvents[3].Type, output[3].Type)
+	}
+
 }
