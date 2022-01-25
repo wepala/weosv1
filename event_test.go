@@ -1,4 +1,4 @@
-package weos_test
+package weosv1_test
 
 import (
 	"github.com/wepala/weos"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewBasicEvent(t *testing.T) {
-	event, _ := weos.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
+	event, _ := weosv1.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
 	if event.Type != "TEST_EVENT" {
 		t.Errorf("expected event to be type '%s', got '%s'", "TEST_EVENT", event.Type)
 	}
@@ -22,14 +22,14 @@ func TestNewBasicEvent(t *testing.T) {
 
 func TestEvent_IsValid(t *testing.T) {
 	t.Run("valid event", func(t *testing.T) {
-		event, _ := weos.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
+		event, _ := weosv1.NewBasicEvent("TEST_EVENT", "1iNqlx5htN0oJ3viyfWkAofJX7k", "BaseAggregate", nil)
 		if !event.IsValid() {
 			t.Errorf("expected the event to be valid")
 		}
 	})
 
 	t.Run("no entity id, event invalid", func(t *testing.T) {
-		event, _ := weos.NewBasicEvent("TEST_EVENT", "", "BaseAggregate", nil)
+		event, _ := weosv1.NewBasicEvent("TEST_EVENT", "", "BaseAggregate", nil)
 		if event.IsValid() {
 			t.Fatalf("expected the event to be invalid")
 		}
@@ -40,11 +40,11 @@ func TestEvent_IsValid(t *testing.T) {
 	})
 
 	t.Run("no event id, event invalid", func(t *testing.T) {
-		event := weos.Event{
+		event := weosv1.Event{
 			ID:      "",
 			Type:    "Some Type",
 			Payload: nil,
-			Meta: weos.EventMeta{
+			Meta: weosv1.EventMeta{
 				EntityID: "1iNqlx5htN0oJ3viyfWkAofJX7k",
 			},
 			Version: 1,
@@ -59,11 +59,11 @@ func TestEvent_IsValid(t *testing.T) {
 	})
 
 	t.Run("no version no, event invalid", func(t *testing.T) {
-		event := weos.Event{
+		event := weosv1.Event{
 			ID:      "adfasdf",
 			Type:    "Some Type",
 			Payload: nil,
-			Meta: weos.EventMeta{
+			Meta: weosv1.EventMeta{
 				EntityID: "1iNqlx5htN0oJ3viyfWkAofJX7k",
 			},
 			Version: 0,
@@ -78,11 +78,11 @@ func TestEvent_IsValid(t *testing.T) {
 	})
 
 	t.Run("no type, event invalid", func(t *testing.T) {
-		event := weos.Event{
+		event := weosv1.Event{
 			ID:      "adfasdf",
 			Type:    "",
 			Payload: nil,
-			Meta: weos.EventMeta{
+			Meta: weosv1.EventMeta{
 				EntityID: "1iNqlx5htN0oJ3viyfWkAofJX7k",
 			},
 			Version: 1,
@@ -99,13 +99,13 @@ func TestEvent_IsValid(t *testing.T) {
 }
 
 type BaseAggregate struct {
-	weos.AggregateRoot
+	weosv1.AggregateRoot
 }
 
 func TestNewAggregateEvent(t *testing.T) {
 	entity := &BaseAggregate{}
 	entity.ID = "1iNqlx5htN0oJ3viyfWkAofJX7k"
-	event := weos.NewAggregateEvent("TEST_EVENT", entity, nil)
+	event := weosv1.NewAggregateEvent("TEST_EVENT", entity, nil)
 	if event.Type != "TEST_EVENT" {
 		t.Errorf("expected event to be type '%s', got '%s'", "TEST_EVENT", event.Type)
 	}

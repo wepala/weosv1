@@ -1,4 +1,4 @@
-package weos_test
+package weosv1_test
 
 import (
 	"database/sql"
@@ -10,11 +10,11 @@ import (
 )
 
 func TestNewApplicationFromConfig(t *testing.T) {
-	config := &weos.ApplicationConfig{
+	config := &weosv1.ApplicationConfig{
 		ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 		Title:     "Test Module",
 		AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-		Database: &weos.DBConfig{
+		Database: &weosv1.DBConfig{
 			Driver:   "ramsql",
 			Host:     "localhost",
 			User:     "root",
@@ -22,7 +22,7 @@ func TestNewApplicationFromConfig(t *testing.T) {
 			Port:     5432,
 			Database: "test",
 		},
-		Log: &weos.LogConfig{
+		Log: &weosv1.LogConfig{
 			Level:        "debug",
 			ReportCaller: false,
 			Formatter:    "text",
@@ -30,7 +30,7 @@ func TestNewApplicationFromConfig(t *testing.T) {
 	}
 
 	t.Run("basic module from config", func(t *testing.T) {
-		app, err := weos.NewApplicationFromConfig(config, nil, nil, nil, nil)
+		app, err := weosv1.NewApplicationFromConfig(config, nil, nil, nil, nil)
 		if err != nil {
 			t.Fatalf("error encountered setting up app '%s'", err)
 		}
@@ -65,7 +65,7 @@ func TestNewApplicationFromConfig(t *testing.T) {
 
 			},
 		}
-		app, err := weos.NewApplicationFromConfig(config, logger, nil, nil, &EventRepositoryMock{})
+		app, err := weosv1.NewApplicationFromConfig(config, logger, nil, nil, &EventRepositoryMock{})
 		if err != nil {
 			t.Fatalf("error encountered setting up app")
 		}
@@ -82,7 +82,7 @@ func TestNewApplicationFromConfig(t *testing.T) {
 		}
 		defer db.Close()
 
-		app, err := weos.NewApplicationFromConfig(config, nil, db, nil, &EventRepositoryMock{})
+		app, err := weosv1.NewApplicationFromConfig(config, nil, db, nil, &EventRepositoryMock{})
 		if err != nil {
 			t.Fatalf("error encountered setting up app")
 		}
@@ -94,22 +94,22 @@ func TestNewApplicationFromConfig(t *testing.T) {
 
 func TestNewApplicationFromConfig_SQLite(t *testing.T) {
 	t.Run("test setting up basic sqlite connection", func(t *testing.T) {
-		sqliteConfig := &weos.ApplicationConfig{
+		sqliteConfig := &weosv1.ApplicationConfig{
 			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 			Title:     "Test Module",
 			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-			Database: &weos.DBConfig{
+			Database: &weosv1.DBConfig{
 				Driver:   "sqlite3",
 				Database: "test.db",
 			},
-			Log: &weos.LogConfig{
+			Log: &weosv1.LogConfig{
 				Level:        "debug",
 				ReportCaller: false,
 				Formatter:    "text",
 			},
 		}
 
-		app, err := weos.NewApplicationFromConfig(sqliteConfig, nil, nil, nil, &EventRepositoryMock{})
+		app, err := weosv1.NewApplicationFromConfig(sqliteConfig, nil, nil, nil, &EventRepositoryMock{})
 		if err != nil {
 			t.Fatalf("error encountered setting up app '%s'", err)
 		}
@@ -126,22 +126,22 @@ func TestNewApplicationFromConfig_SQLite(t *testing.T) {
 	})
 
 	t.Run("test setting up sqlite connection in memory named database", func(t *testing.T) {
-		sqliteConfig := &weos.ApplicationConfig{
+		sqliteConfig := &weosv1.ApplicationConfig{
 			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 			Title:     "Test Module",
 			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-			Database: &weos.DBConfig{
+			Database: &weosv1.DBConfig{
 				Driver:   "sqlite3",
 				Database: ":memory:",
 			},
-			Log: &weos.LogConfig{
+			Log: &weosv1.LogConfig{
 				Level:        "debug",
 				ReportCaller: false,
 				Formatter:    "text",
 			},
 		}
 
-		app, err := weos.NewApplicationFromConfig(sqliteConfig, nil, nil, nil, &EventRepositoryMock{})
+		app, err := weosv1.NewApplicationFromConfig(sqliteConfig, nil, nil, nil, &EventRepositoryMock{})
 		if err != nil {
 			t.Fatalf("error encountered setting up app '%s'", err)
 		}
@@ -161,24 +161,24 @@ func TestNewApplicationFromConfig_SQLite(t *testing.T) {
 	})
 
 	t.Run("test setting up sqlite connection with authentication", func(t *testing.T) {
-		sqliteConfig := &weos.ApplicationConfig{
+		sqliteConfig := &weosv1.ApplicationConfig{
 			ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 			Title:     "Test Module",
 			AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-			Database: &weos.DBConfig{
+			Database: &weosv1.DBConfig{
 				Driver:   "sqlite3",
 				Database: ":memory:",
 				User:     "test",
 				Password: "pass",
 			},
-			Log: &weos.LogConfig{
+			Log: &weosv1.LogConfig{
 				Level:        "debug",
 				ReportCaller: false,
 				Formatter:    "text",
 			},
 		}
 
-		app, err := weos.NewApplicationFromConfig(sqliteConfig, nil, nil, nil, &EventRepositoryMock{})
+		app, err := weosv1.NewApplicationFromConfig(sqliteConfig, nil, nil, nil, &EventRepositoryMock{})
 		if err != nil {
 			t.Fatalf("error encountered setting up app '%s'", err)
 		}
@@ -191,11 +191,11 @@ func TestNewApplicationFromConfig_SQLite(t *testing.T) {
 }
 
 func TestWeOSApp_AddProjection(t *testing.T) {
-	config := &weos.ApplicationConfig{
+	config := &weosv1.ApplicationConfig{
 		ModuleID:  "1iPwGftUqaP4rkWdvFp6BBW2tOf",
 		Title:     "Test Module",
 		AccountID: "1iPwIGTgWVGyl4XfgrhCqYiiQ7d",
-		Database: &weos.DBConfig{
+		Database: &weosv1.DBConfig{
 			Driver:   "ramsql",
 			Host:     "localhost",
 			User:     "root",
@@ -203,15 +203,15 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 			Port:     5432,
 			Database: "test",
 		},
-		Log: &weos.LogConfig{
+		Log: &weosv1.LogConfig{
 			Level:        "debug",
 			ReportCaller: false,
 			Formatter:    "text",
 		},
 	}
 	mockProjection := &ProjectionMock{
-		GetEventHandlerFunc: func() weos.EventHandler {
-			return func(ctx context.Context, event weos.Event) {
+		GetEventHandlerFunc: func() weosv1.EventHandler {
+			return func(ctx context.Context, event weosv1.Event) {
 
 			}
 		},
@@ -223,11 +223,11 @@ func TestWeOSApp_AddProjection(t *testing.T) {
 		MigrateFunc: func(ctx context.Context) error {
 			return nil
 		},
-		AddSubscriberFunc: func(handler weos.EventHandler) {
+		AddSubscriberFunc: func(handler weosv1.EventHandler) {
 
 		},
 	}
-	app, err := weos.NewApplicationFromConfig(config, nil, nil, nil, mockEventRepository)
+	app, err := weosv1.NewApplicationFromConfig(config, nil, nil, nil, mockEventRepository)
 	if err != nil {
 		t.Fatalf("unexpected error occured setting up module '%s'", err)
 	}

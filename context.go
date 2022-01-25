@@ -1,4 +1,4 @@
-package weos
+package weosv1
 
 import "golang.org/x/net/context"
 

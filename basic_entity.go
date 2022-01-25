@@ -1,4 +1,4 @@
-package weos
+package weosv1
 
 type BasicEntity struct {
 	entityErrors []error

@@ -1,4 +1,4 @@
-package weos
+package weosv1
 
 //go:generate moq -out mocks_test.go -pkg weos_test . EventRepository Projection Log Dispatcher Application
 

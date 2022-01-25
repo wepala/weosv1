@@ -1,4 +1,4 @@
-package weos
+package weosv1
 
 type Log interface {
 	Debugf(format string, args ...interface{})

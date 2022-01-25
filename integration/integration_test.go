@@ -126,29 +126,29 @@ func TestMain(m *testing.M) {
 }
 
 func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
-	gormDB.Where("1 = 1").Unscoped().Delete(weos.GormEvent{})
-	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "123", "456")
+	gormDB.Where("1 = 1").Unscoped().Delete(weosv1.GormEvent{})
+	eventRepository, err := weosv1.NewBasicEventRepository(gormDB, log.New(), false, "123", "456")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
+	err = eventRepository.(*weosv1.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
 		t.Fatalf("error encountered migration event repository '%s'", err)
 	}
-	entity := &weos.AggregateRoot{
-		BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"},
+	entity := &weosv1.AggregateRoot{
+		BasicEntity: weosv1.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"},
 	}
 
-	mockEvent := weos.NewEntityEvent("CREATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent := weosv1.NewEntityEvent("CREATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"})
 
-	mockEvent2 := weos.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent2 := weosv1.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
-	mockEvent3 := weos.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent3 := weosv1.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
@@ -173,30 +173,30 @@ func TestEventRepositoryGorm_GetByAggregate(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
-	gormDB.Where("1 = 1").Unscoped().Delete(weos.GormEvent{})
-	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
+	gormDB.Where("1 = 1").Unscoped().Delete(weosv1.GormEvent{})
+	eventRepository, err := weosv1.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
+	err = eventRepository.(*weosv1.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
 		t.Fatalf("failed to run migrations")
 	}
 
-	entity := &weos.AggregateRoot{
-		BasicEntity: weos.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"},
+	entity := &weosv1.AggregateRoot{
+		BasicEntity: weosv1.BasicEntity{ID: "1iNfR0jYD9UbYocH8D3WK6N4pG9"},
 	}
 
-	mockEvent := weos.NewEntityEvent("CREATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
+	mockEvent := weosv1.NewEntityEvent("CREATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"})
 
-	mockEvent2 := weos.NewEntityEvent("UPDATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
+	mockEvent2 := weosv1.NewEntityEvent("UPDATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
-	mockEvent3 := weos.NewEntityEvent("UPDATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
+	mockEvent3 := weosv1.NewEntityEvent("UPDATE_POST", entity, "1wqoyqIRsZTtnP3wjKh2Mq1Qp03", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
@@ -221,28 +221,28 @@ func TestEventRepositoryGorm_GetByAggregateAndType(t *testing.T) {
 }
 
 func TestEventRepositoryGorm_GetByEntityAndAggregate(t *testing.T) {
-	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
+	eventRepository, err := weosv1.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
+	err = eventRepository.(*weosv1.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
 		t.Fatalf("failed to run migrations")
 	}
-	entity := &weos.AggregateRoot{
-		BasicEntity: weos.BasicEntity{ID: "1wqoyqIRsZTtnP3wjKh2Mq1Qp03"},
+	entity := &weosv1.AggregateRoot{
+		BasicEntity: weosv1.BasicEntity{ID: "1wqoyqIRsZTtnP3wjKh2Mq1Qp03"},
 	}
 
-	mockEvent := weos.NewEntityEvent("CREATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent := weosv1.NewEntityEvent("CREATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title string `json:"title"`
 	}{Title: "First Post"})
 
-	mockEvent2 := weos.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent2 := weosv1.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Lorem Ipsum"})
 
-	mockEvent3 := weos.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
+	mockEvent3 := weosv1.NewEntityEvent("UPDATE_POST", entity, "1iNfR0jYD9UbYocH8D3WK6N4pG9", &struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	}{Title: "Updated First Post", Description: "Finalizing Post"})
@@ -268,21 +268,21 @@ func TestEventRepositoryGorm_GetByEntityAndAggregate(t *testing.T) {
 
 func TestSaveAggregateEvents(t *testing.T) {
 	type BaseAggregate struct {
-		weos.AggregateRoot
+		weosv1.AggregateRoot
 		Title string `json:"title"`
 	}
 
 	baseAggregate := &BaseAggregate{}
-	event, err := weos.NewBasicEvent("test.event", "123", "BaseAggregate", "")
+	event, err := weosv1.NewBasicEvent("test.event", "123", "BaseAggregate", "")
 	if err != nil {
 		t.Fatalf("unexpected error setting up test event '%s'", err)
 	}
 	baseAggregate.NewChange(event)
-	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "123", "456")
+	eventRepository, err := weosv1.NewBasicEventRepository(gormDB, log.New(), false, "123", "456")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
+	err = eventRepository.(*weosv1.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
 		t.Fatalf("failed to run migrations")
 	}
@@ -298,17 +298,17 @@ func TestSaveAggregateEvents(t *testing.T) {
 
 func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 
-	eventRepository, err := weos.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
+	eventRepository, err := weosv1.NewBasicEventRepository(gormDB, log.New(), false, "accountID", "applicationID")
 	if err != nil {
 		t.Fatalf("error creating application '%s'", err)
 	}
-	err = eventRepository.(*weos.EventRepositoryGorm).Migrate(context.Background())
+	err = eventRepository.(*weosv1.EventRepositoryGorm).Migrate(context.Background())
 	if err != nil {
 		t.Fatalf("error setting up application'%s'", err)
 	}
 
-	generateEvents := make([]*weos.Event, 20000)
-	entity := &weos.AggregateRoot{}
+	generateEvents := make([]*weosv1.Event, 20000)
+	entity := &weosv1.AggregateRoot{}
 
 	for i := 0; i < 20000; i++ {
 
@@ -320,11 +320,11 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 
 		currEvent += currValue
 
-		generateEvents[i] = &weos.Event{
+		generateEvents[i] = &weosv1.Event{
 			ID:      ksuid.New().String(),
 			Type:    currEvent,
 			Payload: nil,
-			Meta: weos.EventMeta{
+			Meta: weosv1.EventMeta{
 				EntityID:   currID,
 				EntityType: currType,
 				SequenceNo: 0,
@@ -337,11 +337,11 @@ func TestEventRepositoryGorm_BatchPersist(t *testing.T) {
 
 	//add an event handler
 	eventHandlerCalled := 0
-	eventRepository.AddSubscriber(func(ctx context.Context, event weos.Event) {
+	eventRepository.AddSubscriber(func(ctx context.Context, event weosv1.Event) {
 		eventHandlerCalled += 1
 	})
 
-	err = eventRepository.Persist(context.WithValue(context.TODO(), weos.ACCOUNT_ID, "12345"), entity)
+	err = eventRepository.Persist(context.WithValue(context.TODO(), weosv1.ACCOUNT_ID, "12345"), entity)
 	if err != nil {
 		t.Fatalf("error encountered persisting event '%s'", err)
 	}

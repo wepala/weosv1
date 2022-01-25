@@ -1,4 +1,4 @@
-package weos_test
+package weosv1_test
 
 import (
 	"github.com/wepala/weos"
@@ -7,23 +7,23 @@ import (
 )
 
 func TestEventDisptacher_Dispatch(t *testing.T) {
-	mockEvent := &weos.Event{
+	mockEvent := &weosv1.Event{
 		Type:    "TEST_EVENT",
 		Payload: nil,
-		Meta: weos.EventMeta{
+		Meta: weosv1.EventMeta{
 			EntityID: "some id",
 			Module:   "applicationID",
 			RootID:   "accountID",
 		},
 		Version: 1,
 	}
-	dispatcher := &weos.EventDisptacher{}
+	dispatcher := &weosv1.EventDisptacher{}
 	handlersCalled := 0
-	dispatcher.AddSubscriber(func(ctx context.Context, event weos.Event) {
+	dispatcher.AddSubscriber(func(ctx context.Context, event weosv1.Event) {
 		handlersCalled += 1
 	})
 
-	dispatcher.AddSubscriber(func(ctx context.Context, event weos.Event) {
+	dispatcher.AddSubscriber(func(ctx context.Context, event weosv1.Event) {
 		handlersCalled += 1
 		if event.Type != mockEvent.Type {
 			t.Errorf("expected the type to be '%s', got '%s'", mockEvent.Type, event.Type)

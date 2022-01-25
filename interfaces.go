@@ -1,4 +1,4 @@
-package weos
+package weosv1
 
 //go:generate moq -out mocks_test.go . EventRepository WeOSEntity Entity ValueObject EventSourcedEntity Repository UnitOfWorkRepository Datastore
 import "golang.org/x/net/context"

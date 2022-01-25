@@ -1,4 +1,4 @@
-package weos_test
+package weosv1_test
 
 import (
 	"github.com/wepala/weos"
@@ -7,25 +7,25 @@ import (
 )
 
 func TestCommandDisptacher_Dispatch(t *testing.T) {
-	mockCommand := &weos.Command{
+	mockCommand := &weosv1.Command{
 		Type:    "TEST_COMMAND",
 		Payload: nil,
-		Metadata: weos.CommandMetadata{
+		Metadata: weosv1.CommandMetadata{
 			Version: 1,
 		},
 	}
-	dispatcher := &weos.DefaultCommandDispatcher{}
+	dispatcher := &weosv1.DefaultCommandDispatcher{}
 	handlersCalled := 0
-	dispatcher.AddSubscriber(mockCommand, func(ctx context.Context, command *weos.Command) error {
+	dispatcher.AddSubscriber(mockCommand, func(ctx context.Context, command *weosv1.Command) error {
 		handlersCalled += 1
 		return nil
 	})
 
-	dispatcher.AddSubscriber(&weos.Command{
+	dispatcher.AddSubscriber(&weosv1.Command{
 		Type:     "*",
 		Payload:  nil,
-		Metadata: weos.CommandMetadata{},
-	}, func(context context.Context, event *weos.Command) error {
+		Metadata: weosv1.CommandMetadata{},
+	}, func(context context.Context, event *weosv1.Command) error {
 		handlersCalled += 1
 		if event.Type != mockCommand.Type {
 			t.Errorf("expected the type to be '%s', got '%s'", mockCommand.Type, event.Type)
