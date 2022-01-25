@@ -1,7 +1,7 @@
 package weosv1_test
 
 import (
-	"github.com/wepala/weos"
+	"github.com/wepala/weosv1"
 	"golang.org/x/net/context"
 	"testing"
 )

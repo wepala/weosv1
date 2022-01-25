@@ -2,7 +2,7 @@ package weosv1_test
 
 import (
 	"errors"
-	"github.com/wepala/weos"
+	"github.com/wepala/weosv1"
 	"testing"
 )
 

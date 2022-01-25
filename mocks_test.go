@@ -6,7 +6,7 @@ package weosv1_test
 import (
 	"context"
 	"database/sql"
-	"github.com/wepala/weos"
+	"github.com/wepala/weosv1"
 	"gorm.io/gorm"
 	"net/http"
 	"sync"

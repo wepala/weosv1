@@ -11,7 +11,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/segmentio/ksuid"
 	log "github.com/sirupsen/logrus"
-	"github.com/wepala/weos"
+	"github.com/wepala/weosv1"
 	"golang.org/x/net/context"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

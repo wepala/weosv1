@@ -3,7 +3,7 @@ package weosv1_test
 import (
 	"database/sql"
 	_ "github.com/proullon/ramsql/driver"
-	"github.com/wepala/weos"
+	"github.com/wepala/weosv1"
 	"golang.org/x/net/context"
 	"os"
 	"testing"

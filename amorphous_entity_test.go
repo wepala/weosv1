@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/wepala/weos"
+	"github.com/wepala/weosv1"
 )
 
 type user struct {
